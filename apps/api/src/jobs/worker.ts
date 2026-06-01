@@ -1,6 +1,9 @@
-import 'dotenv/config'
+import dotenv from 'dotenv'
+import { resolve } from 'path'
+dotenv.config({ path: resolve(process.cwd(), '../../.env') })
+
 import { Worker } from 'bullmq'
-import { connection } from './queue.js'
+import { getConnection, makeQueue } from './queue.js'
 import { scrapeNI } from './scrapers/ni.js'
 import { classifyLead } from '../services/classifier.js'
 import { prisma } from '@bcf/db'
@@ -12,44 +15,27 @@ new Worker('scrapers', async job => {
   const start = Date.now()
   const source: string = job.data.source
 
-  console.log(`[worker] Starting scraper job: ${job.name} (source: ${source})`)
+  console.log(`[worker] Starting scraper: ${job.name} (source: ${source})`)
 
   try {
     let result = { found: 0, inserted: 0 }
 
-    if (source === 'ni') {
-      result = await scrapeNI()
-    } else if (source === 'roi') {
-      // Phase 2 — placeholder
-      console.log('[worker] ROI scraper not yet implemented')
-    }
+    if (source === 'ni') result = await scrapeNI()
+    else console.log(`[worker] ${source} scraper not yet implemented`)
 
     await prisma.scrapeLog.create({
-      data: {
-        source,
-        leadsFound: result.found,
-        leadsNew: result.inserted,
-        status: 'success',
-        durationMs: Date.now() - start,
-      },
+      data: { source, leadsFound: result.found, leadsNew: result.inserted, status: 'success', durationMs: Date.now() - start },
     })
 
     return result
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
+    const error = err instanceof Error ? err.message : String(err)
     await prisma.scrapeLog.create({
-      data: {
-        source,
-        leadsFound: 0,
-        leadsNew: 0,
-        status: 'error',
-        error: message,
-        durationMs: Date.now() - start,
-      },
+      data: { source, leadsFound: 0, leadsNew: 0, status: 'error', error, durationMs: Date.now() - start },
     })
     throw err
   }
-}, { connection, concurrency: 1 })
+}, { connection: getConnection(), concurrency: 1 })
 
 // ─── Classifier worker ────────────────────────────────────────────────────────
 
@@ -57,12 +43,9 @@ new Worker('classifier', async job => {
   const { leadId } = job.data as { leadId: string }
 
   const lead = await prisma.lead.findUnique({ where: { id: leadId } })
-  if (!lead || !lead.description) {
-    console.warn(`[worker] Lead ${leadId} not found or has no description`)
-    return
-  }
+  if (!lead?.description) return
 
-  console.log(`[worker] Classifying lead ${leadId} (${lead.planningRef})`)
+  console.log(`[worker] Classifying ${lead.planningRef}`)
 
   const result = await classifyLead(lead.description, lead.location ?? undefined)
 
@@ -79,7 +62,6 @@ new Worker('classifier', async job => {
     },
   })
 
-  // Auto-push to GHL if score > 70
   if (result.lead_score >= 70) {
     await pushToGHL({
       leadId,
@@ -90,6 +72,6 @@ new Worker('classifier', async job => {
       summary: result.ai_summary,
     })
   }
-}, { connection, concurrency: 3 })
+}, { connection: getConnection(), concurrency: 3 })
 
-console.log('[worker] Scraper + classifier workers running')
+console.log('[worker] Scraper + classifier workers running. Ctrl+C to stop.')
