@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum LeadStatus {
+  NEW
+  REVIEWED
+  CONTACTED
+  QUOTE_SENT
+  FOLLOW_UP
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum Company {
+  BGR    // Bespoke Garden Rooms Ballycastle
+  BWDS   // Windows & Doors
+  BCF    // Ballycastle Climbing Frames
+  MULTIPLE
+}
+
+enum UserRole {
+  ADMIN  // Nicola — sees all companies
+  STAFF  // Sees own company only
+}
+
+// ─── Core tables ──────────────────────────────────────────────────────────────
+
+model Lead {
+  id                 String     @id @default(cuid())
+  planningRef        String     @unique @map("planning_ref")
+  projectType        String?    @map("project_type")
+  description        String?    @db.Text
+  location           String?
+  postcode           String?
+  applicantName      String?    @map("applicant_name")
+  dateSubmitted      DateTime?  @map("date_submitted")
+  dateApproved       DateTime?  @map("date_approved")
+  status             LeadStatus @default(NEW)
+  assignedCompany    Company?   @map("assigned_company")
+  leadScore          Int        @default(0) @map("lead_score")
+  estimatedValue     Int?       @map("estimated_value") // GBP
+  aiSummary          String?    @map("ai_summary") @db.Text
+  suggestedAction    String?    @map("suggested_action") @db.Text
+  sourceUrl          String?    @map("source_url")
+  sourceRegion       String?    @map("source_region")
+  intelligenceSource String     @default("planning") @map("intelligence_source")
+  classifiedAt       DateTime?  @map("classified_at")
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
+
+  notes PipelineNote[]
+
+  @@index([assignedCompany])
+  @@index([status])
+  @@index([leadScore])
+  @@index([createdAt])
+  @@map("leads")
+}
+
+model PipelineNote {
+  id        String   @id @default(cuid())
+  leadId    String   @map("lead_id")
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  note      String   @db.Text
+  author    String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([leadId])
+  @@map("pipeline_notes")
+}
+
+model ScrapeLog {
+  id         String   @id @default(cuid())
+  source     String
+  leadsFound Int      @default(0) @map("leads_found")
+  leadsNew   Int      @default(0) @map("leads_new")
+  status     String   // "success" | "error" | "partial"
+  error      String?  @db.Text
+  durationMs Int?     @map("duration_ms")
+  runAt      DateTime @default(now()) @map("run_at")
+
+  @@index([source])
+  @@index([runAt])
+  @@map("scrape_logs")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // bcrypt hash
+  name      String?
+  company   Company
+  role      UserRole @default(STAFF)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}

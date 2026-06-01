@@ -1,0 +1,17 @@
+{
+  "name": "bcf-opportunity-portal",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "db:generate": "pnpm --filter @bcf/db generate",
+    "db:migrate": "pnpm --filter @bcf/db migrate",
+    "db:studio": "pnpm --filter @bcf/db studio"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0"
+  }
+}
