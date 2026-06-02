@@ -32,10 +32,11 @@ new Worker('scrapers', async job => {
     throw err
   }
 }, { connection: getConnection() as any, concurrency: 1 })
+  .on('failed', (job, err) => console.error(`[worker] Scraper job failed: ${job?.name}`, err.message))
 
 // ─── Classifier worker ────────────────────────────────────────────────────────
 
-new Worker('classifier', async job => {
+const classifierWorker = new Worker('classifier', async job => {
   const { leadId } = job.data as { leadId: string }
 
   const lead = await prisma.lead.findUnique({ where: { id: leadId } })
@@ -68,6 +69,16 @@ new Worker('classifier', async job => {
       summary: result.ai_summary,
     })
   }
-}, { connection: getConnection() as any, concurrency: 3 })
+}, { connection: getConnection() as any, concurrency: 1 })
+
+classifierWorker.on('failed', (job, err) => {
+  console.error(`[worker] Classifier FAILED for job ${job?.id}: ${err.message}`)
+})
+classifierWorker.on('error', (err) => {
+  console.error('[worker] Classifier worker error:', err.message)
+})
+classifierWorker.on('completed', (job) => {
+  console.log(`[worker] Classifier completed job ${job.id}`)
+})
 
 console.log('[worker] Scraper + classifier workers running. Ctrl+C to stop.')
