@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio'
 import { prisma } from '@bcf/db'
-import { classifierQueue } from '../queue.js'
+import { makeQueue } from '../queue.js'
 
 const BASE_URL = 'https://planningregister.planningsystemni.gov.uk'
 const RATE_LIMIT_MS = 2000
@@ -65,7 +65,7 @@ function buildSearchUrl(fromDate: string, page: number): string {
   return `${BASE_URL}/Search/Results?${params}`
 }
 
-function parsePage(html: string, baseUrl: string): {
+function parsePage(html: string, _baseUrl: string): {
   applications: RawApplication[]
   hasNextPage: boolean
 } {
@@ -130,7 +130,7 @@ async function upsertApplication(app: RawApplication): Promise<boolean> {
   })
 
   // Queue for AI classification
-  await classifierQueue.add('classify', { leadId: lead.id })
+  await makeQueue('classifier').add('classify', { leadId: lead.id })
 
   return true
 }

@@ -1,13 +1,13 @@
 import { Queue } from 'bullmq'
-import IORedis from 'ioredis'
+import { Redis } from 'ioredis'
 
-let _connection: IORedis | undefined
+let _connection: Redis | undefined
 
 /** Returns a shared Redis connection, created on first call (after dotenv is loaded). */
-export function getConnection(): IORedis {
+export function getConnection(): Redis {
   if (!_connection) {
     if (!process.env.REDIS_URL) throw new Error('REDIS_URL is not set')
-    _connection = new IORedis(process.env.REDIS_URL, {
+    _connection = new Redis(process.env.REDIS_URL, {
       maxRetriesPerRequest: null,
       enableReadyCheck: false,
     })
