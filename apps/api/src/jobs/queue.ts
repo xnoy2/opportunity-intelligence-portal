@@ -18,7 +18,7 @@ export function getConnection(): Redis {
 /** Create a BullMQ queue — call this after env is loaded. */
 export function makeQueue(name: string) {
   return new Queue(name, {
-    connection: getConnection(),
+    connection: getConnection() as any,
     defaultJobOptions: {
       attempts: 3,
       backoff: { type: 'exponential', delay: 60_000 },

@@ -35,7 +35,7 @@ new Worker('scrapers', async job => {
     })
     throw err
   }
-}, { connection: getConnection(), concurrency: 1 })
+}, { connection: getConnection() as any, concurrency: 1 })
 
 // ─── Classifier worker ────────────────────────────────────────────────────────
 
@@ -72,6 +72,6 @@ new Worker('classifier', async job => {
       summary: result.ai_summary,
     })
   }
-}, { connection: getConnection(), concurrency: 3 })
+}, { connection: getConnection() as any, concurrency: 3 })
 
 console.log('[worker] Scraper + classifier workers running. Ctrl+C to stop.')
