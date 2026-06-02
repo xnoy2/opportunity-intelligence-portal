@@ -101,3 +101,7 @@ export async function getScrapeLogs(): Promise<ScrapeLog[]> {
 export async function triggerScrape(source = 'ni'): Promise<{ queued: boolean; source: string }> {
   return request('/pipeline/scrape', { method: 'POST', body: JSON.stringify({ source }) })
 }
+
+export async function triggerReclassify(): Promise<{ queued: number }> {
+  return request('/pipeline/reclassify', { method: 'POST', body: '{}' })
+}

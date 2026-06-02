@@ -41,6 +41,23 @@ export const pipelineRoutes: FastifyPluginAsync = async server => {
     })
   })
 
+  // POST /pipeline/reclassify — re-queue all unclassified leads (admin only)
+  server.post('/reclassify', async (request, reply) => {
+    if (request.user.role !== 'ADMIN') {
+      return reply.status(403).send({ error: 'Admin only' })
+    }
+    const unclassified = await server.prisma.lead.findMany({
+      where: { leadScore: 0, classifiedAt: null },
+      select: { id: true, planningRef: true },
+    })
+    const classifierQ = makeQueue('classifier')
+    for (const lead of unclassified) {
+      await classifierQ.add('classify', { leadId: lead.id }, { priority: 1 })
+    }
+    console.log(`[pipeline] Re-queued ${unclassified.length} leads for classification`)
+    return { queued: unclassified.length }
+  })
+
   // POST /pipeline/scrape — manually trigger a scraper run (admin only)
   server.post('/scrape', async (request, reply) => {
     if (request.user.role !== 'ADMIN') {
