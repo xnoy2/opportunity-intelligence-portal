@@ -21,8 +21,17 @@ const server = Fastify({
 })
 
 async function main() {
+  const allowedOrigins = [
+    process.env.WEB_URL || 'http://localhost:3000',
+    'http://localhost:3000',
+    'https://web-production-90ce7.up.railway.app',
+  ].filter(Boolean)
+
   await server.register(cors, {
-    origin: process.env.WEB_URL || 'http://localhost:3000',
+    origin: (origin, cb) => {
+      if (!origin || allowedOrigins.includes(origin)) return cb(null, true)
+      cb(new Error('Not allowed by CORS'), false)
+    },
     credentials: true,
   })
 
