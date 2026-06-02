@@ -57,6 +57,10 @@ async function main() {
   server.log.info(`API listening on port ${port}`)
 
   startScheduler()
+
+  // Start BullMQ workers in-process — scraper + classifier run alongside the API
+  await import('./jobs/worker.js')
+  server.log.info('BullMQ workers started')
 }
 
 main().catch(err => {

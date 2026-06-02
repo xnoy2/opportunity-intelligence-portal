@@ -1,7 +1,3 @@
-import dotenv from 'dotenv'
-import { resolve } from 'path'
-dotenv.config({ path: resolve(process.cwd(), '../../.env') })
-
 import { Worker } from 'bullmq'
 import { getConnection, makeQueue } from './queue.js'
 import { scrapeNI } from './scrapers/ni.js'
