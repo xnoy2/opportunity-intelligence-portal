@@ -61,15 +61,28 @@ export async function classifyLead(
   // Strip markdown code fences if model adds them despite instructions
   const clean = text.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim()
 
-  let result: ClassificationResult
+  let raw: Record<string, unknown>
   try {
-    result = JSON.parse(clean)
+    raw = JSON.parse(clean)
   } catch {
-    throw new Error(`Classifier returned unparseable response: ${text.slice(0, 200)}`)
+    throw new Error(`Classifier returned unparseable response: ${text.slice(0, 300)}`)
   }
 
-  // Clamp score to 0-100
-  result.lead_score = Math.max(0, Math.min(100, Math.round(result.lead_score)))
+  console.log('[classifier] Raw response:', JSON.stringify(raw).slice(0, 200))
+
+  // Normalise field names — Claude may use different casings
+  const score = Number(
+    raw.lead_score ?? raw.leadScore ?? raw.score ?? raw.Lead_Score ?? 50
+  )
+
+  const result: ClassificationResult = {
+    project_type:       String(raw.project_type ?? raw.projectType ?? raw.type ?? 'Unknown'),
+    assigned_company:   (raw.assigned_company ?? raw.assignedCompany ?? raw.company ?? 'MULTIPLE') as ClassificationResult['assigned_company'],
+    lead_score:         isNaN(score) ? 50 : Math.max(0, Math.min(100, Math.round(score))),
+    estimated_value_gbp: Number(raw.estimated_value_gbp ?? raw.estimatedValue ?? raw.value ?? 0),
+    ai_summary:         String(raw.ai_summary ?? raw.aiSummary ?? raw.summary ?? ''),
+    suggested_action:   String(raw.suggested_action ?? raw.suggestedAction ?? raw.action ?? ''),
+  }
 
   return result
 }
