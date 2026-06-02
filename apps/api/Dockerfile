@@ -20,10 +20,11 @@ RUN pnpm install --frozen-lockfile
 COPY packages/db ./packages/db
 COPY apps/api ./apps/api
 
-# Generate Prisma client
+# Generate Prisma client and compile @bcf/db to JS
 RUN pnpm --filter @bcf/db generate
+RUN pnpm --filter @bcf/db build
 
-# Build
+# Build API
 RUN pnpm --filter @bcf/api build
 
 # ─── Phase 3+ Playwright support ───────────────────────────────────────────────
