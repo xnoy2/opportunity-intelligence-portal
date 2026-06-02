@@ -1,161 +1,144 @@
-import * as cheerio from 'cheerio'
+/**
+ * NI Planning Register scraper — uses the TerraQuest JSON API directly.
+ *
+ * API discovered from __ENV.js on planningregister.planningsystemni.gov.uk
+ * Base: https://api-planningregister-planningportal.pr.tqinfra.co.uk/api/v1
+ * Tenant: cfb86436-414d-4459-9545-93eec37615a2 (from NEXT_APP_PP_TENANT_ID)
+ *
+ * SearchTerm is required (min 1 char). "e" appears in virtually all NI
+ * planning descriptions so acts as a broad "get all" query.
+ */
+
 import { prisma } from '@bcf/db'
 import { makeQueue } from '../queue.js'
 
-const BASE_URL = 'https://planningregister.planningsystemni.gov.uk'
-const RATE_LIMIT_MS = 2000
+const API_BASE   = 'https://api-planningregister-planningportal.pr.tqinfra.co.uk/api/v1'
+const TENANT_ID  = 'cfb86436-414d-4459-9545-93eec37615a2'
+const PORTAL_URL = 'https://planningregister.planningsystemni.gov.uk'
+const RATE_MS    = 1500
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
 
-interface RawApplication {
-  planningRef: string
-  description: string
-  location: string
-  applicantName?: string
-  dateSubmitted?: Date
-  sourceUrl: string
+interface NIApplication {
+  applicationId: number
+  applicationReferenceNumber: string
+  siteAddress: string
+  dateReceived: string
+  decisionDate: string | null
+  proposalText: string
+  applicationStatus: string
+  decisionType: string | null
+  applicationType: string
+  authority: string
+  applicantName: string
+  authorityId: number
 }
 
-/** Fetch recent NI planning applications submitted in the last N days */
-export async function scrapeNI(daysBack = 7): Promise<{ found: number; inserted: number }> {
-  const sinceDate = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000)
-  const formattedDate = sinceDate.toISOString().split('T')[0] // YYYY-MM-DD
-
-  const applications: RawApplication[] = []
-  let page = 1
-  let hasMore = true
-
-  while (hasMore) {
-    const url = buildSearchUrl(formattedDate, page)
-    console.log(`[ni-scraper] Fetching page ${page}: ${url}`)
-
-    const html = await fetchWithRetry(url)
-    if (!html) break
-
-    const parsed = parsePage(html, url)
-    applications.push(...parsed.applications)
-
-    hasMore = parsed.hasNextPage
-    page++
-
-    await sleep(RATE_LIMIT_MS)
-  }
-
-  console.log(`[ni-scraper] Fetched ${applications.length} applications`)
-
-  let inserted = 0
-  for (const app of applications) {
-    const isNew = await upsertApplication(app)
-    if (isNew) inserted++
-    await sleep(500)
-  }
-
-  console.log(`[ni-scraper] Inserted ${inserted} new leads`)
-  return { found: applications.length, inserted }
+interface SearchResponse {
+  applications: { items: NIApplication[] }
 }
 
-function buildSearchUrl(fromDate: string, page: number): string {
-  // TODO: verify exact search endpoint and params against live portal
-  // The NI planning portal search form submits to this endpoint
-  const params = new URLSearchParams({
-    startDate: fromDate,
-    status: 'all',
-    page: String(page),
-  })
-  return `${BASE_URL}/Search/Results?${params}`
+interface Pagination {
+  totalCount: number
+  pageSize: number
+  currentPage: number
+  totalPages: number
+  nextPageLink: string | null
 }
 
-function parsePage(html: string, _baseUrl: string): {
-  applications: RawApplication[]
-  hasNextPage: boolean
-} {
-  const $ = cheerio.load(html)
-  const applications: RawApplication[] = []
+async function fetchPage(params: URLSearchParams): Promise<{ items: NIApplication[]; pagination: Pagination }> {
+  const url = `${API_BASE}/applications?${params}`
 
-  // TODO: verify selectors against live planningregister.planningsystemni.gov.uk
-  // Inspect the results table HTML to confirm these class names
-  $('.search-result, .planning-result, tr.result').each((_, el) => {
-    const row = $(el)
-
-    const planningRef = row.find('.reference, .app-ref, td:nth-child(1)').text().trim()
-    const description = row.find('.description, .proposal, td:nth-child(2)').text().trim()
-    const location = row.find('.location, .address, td:nth-child(3)').text().trim()
-    const applicantName = row.find('.applicant, td:nth-child(4)').text().trim() || undefined
-    const dateText = row.find('.date, .submitted-date, td:nth-child(5)').text().trim()
-    const detailHref = row.find('a[href*="Reference"]').attr('href') || ''
-
-    if (!planningRef || !description) return
-
-    applications.push({
-      planningRef: planningRef.replace(/\s+/g, ''),
-      description,
-      location,
-      applicantName: applicantName || undefined,
-      dateSubmitted: parseDate(dateText),
-      sourceUrl: detailHref.startsWith('http') ? detailHref : `${BASE_URL}${detailHref}`,
-    })
-  })
-
-  // Detect pagination — look for a "Next" link
-  const hasNextPage = $('a[rel="next"], .pagination .next, a:contains("Next")').length > 0
-
-  return { applications, hasNextPage }
-}
-
-function parseDate(text: string): Date | undefined {
-  if (!text) return undefined
-  const d = new Date(text)
-  return isNaN(d.getTime()) ? undefined : d
-}
-
-async function upsertApplication(app: RawApplication): Promise<boolean> {
-  const existing = await prisma.lead.findUnique({
-    where: { planningRef: app.planningRef },
-    select: { id: true },
-  })
-
-  if (existing) return false
-
-  const lead = await prisma.lead.create({
-    data: {
-      planningRef: app.planningRef,
-      description: app.description,
-      location: app.location,
-      applicantName: app.applicantName,
-      dateSubmitted: app.dateSubmitted,
-      sourceUrl: app.sourceUrl,
-      sourceRegion: 'NI',
-      intelligenceSource: 'planning',
+  const res = await fetch(url, {
+    headers: {
+      'Accept':     'application/json',
+      'TQ-Tenant':  TENANT_ID,
+      'User-Agent': 'Mozilla/5.0 (compatible; BCFPortal/1.0)',
     },
   })
 
-  // Queue for AI classification
-  await makeQueue('classifier').add('classify', { leadId: lead.id })
+  if (!res.ok) throw new Error(`API returned ${res.status} for ${url}`)
 
-  return true
+  const paginationHeader = res.headers.get('X-Pagination')
+  const pagination: Pagination = paginationHeader
+    ? JSON.parse(paginationHeader)
+    : { totalCount: 0, pageSize: 50, currentPage: 1, totalPages: 1, nextPageLink: null }
+
+  const body = await res.json() as SearchResponse
+  return { items: body.applications?.items ?? [], pagination }
 }
 
-async function fetchWithRetry(url: string, retries = 3): Promise<string | null> {
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; BCFPortal/1.0; +https://bcfportal.co.uk)',
-          Accept: 'text/html,application/xhtml+xml',
-        },
-      })
+export async function scrapeNI(daysBack = 7): Promise<{ found: number; inserted: number }> {
+  const dateTo   = new Date()
+  const dateFrom = new Date(Date.now() - daysBack * 86_400_000)
 
-      if (!response.ok) {
-        console.warn(`[ni-scraper] HTTP ${response.status} on attempt ${attempt}`)
-        if (attempt < retries) await sleep(RATE_LIMIT_MS * attempt)
-        continue
-      }
+  const fmt = (d: Date) =>
+    `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}/${d.getFullYear()}`
 
-      return await response.text()
-    } catch (err) {
-      console.error(`[ni-scraper] Fetch error attempt ${attempt}:`, err)
-      if (attempt < retries) await sleep(RATE_LIMIT_MS * attempt)
-    }
+  const baseParams = new URLSearchParams({
+    SearchTerm:        'e',  // 1-char broad match — appears in nearly all NI descriptions
+    SearchStatus:      'All',
+    SortBy:            'DateReceived',
+    SortByDescending:  'True',
+    SearchType:        'Basic',
+    DateFrom:          fmt(dateFrom),
+    DateTo:            fmt(dateTo),
+    PageSize:          '50',
+  })
+
+  const allApplications: NIApplication[] = []
+  let page = 1
+  let totalPages = 1
+
+  console.log(`[ni-scraper] Fetching NI planning applications from ${fmt(dateFrom)} to ${fmt(dateTo)}`)
+
+  while (page <= totalPages) {
+    const params = new URLSearchParams(baseParams)
+    params.set('PageNumber', String(page))
+
+    console.log(`[ni-scraper] Page ${page}/${totalPages}`)
+
+    const { items, pagination } = await fetchPage(params)
+    allApplications.push(...items)
+    totalPages = pagination.totalPages
+
+    if (page < totalPages) await sleep(RATE_MS)
+    page++
   }
-  return null
+
+  console.log(`[ni-scraper] Fetched ${allApplications.length} applications (${totalPages} pages)`)
+
+  let inserted = 0
+  const classifierQ = makeQueue('classifier')
+
+  for (const app of allApplications) {
+    const existing = await prisma.lead.findUnique({
+      where: { planningRef: app.applicationReferenceNumber },
+      select: { id: true },
+    })
+
+    if (existing) continue
+
+    const lead = await prisma.lead.create({
+      data: {
+        planningRef:        app.applicationReferenceNumber,
+        description:        app.proposalText,
+        location:           app.siteAddress.replace(/\r\n/g, ', ').replace(/\n/g, ', '),
+        applicantName:      app.applicantName || undefined,
+        dateSubmitted:      app.dateReceived ? new Date(app.dateReceived) : undefined,
+        dateApproved:       app.decisionDate ? new Date(app.decisionDate) : undefined,
+        sourceUrl:          `${PORTAL_URL}/application/${app.applicationReferenceNumber}`,
+        sourceRegion:       'NI',
+        intelligenceSource: 'planning',
+      },
+    })
+
+    await classifierQ.add('classify', { leadId: lead.id })
+    inserted++
+
+    await sleep(200)
+  }
+
+  console.log(`[ni-scraper] Inserted ${inserted} new leads, queued for classification`)
+  return { found: allApplications.length, inserted }
 }
