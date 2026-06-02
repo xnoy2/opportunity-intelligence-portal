@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { @apply bg-navy text-white; }
+
+  body {
+    @apply bg-navy text-white antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  ::-webkit-scrollbar { @apply w-1.5 h-1.5; }
+  ::-webkit-scrollbar-track { @apply bg-navy; }
+  ::-webkit-scrollbar-thumb { @apply bg-navy-border rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-muted; }
+}
+
+@layer utilities {
+  .text-muted { color: #8B9AAD; }
+  .bg-navy { background-color: #0F1623; }
+  .bg-navy-card { background-color: #131E2E; }
+  .border-navy-border { border-color: #1E2D42; }
+  .bg-navy-hover { background-color: #1A2640; }
+  .text-gold { color: #C9A84C; }
+  .bg-gold { background-color: #C9A84C; }
+  .text-success { color: #3ECF8E; }
+  .text-warning { color: #E2A24B; }
+  .text-danger { color: #F87171; }
+  .text-accent { color: #4A9EFF; }
+  .bg-success { background-color: #3ECF8E; }
+  .bg-warning { background-color: #E2A24B; }
+  .bg-danger { background-color: #F87171; }
+  .bg-accent { background-color: #4A9EFF; }
+}

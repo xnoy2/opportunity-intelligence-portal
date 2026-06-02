@@ -5,8 +5,13 @@ const GHL_API_BASE = 'https://rest.gohighlevel.com/v1'
 const LOCATION_IDS: Record<string, string | undefined> = {
   BGR: process.env.GHL_BGR_LOCATION_ID,
   BCF: process.env.GHL_BCF_LOCATION_ID,
-  // BWDS shares BGR location or add a separate ID if available
   BWDS: process.env.GHL_BGR_LOCATION_ID,
+}
+
+const API_KEYS: Record<string, string | undefined> = {
+  BGR: process.env.GHL_BGR_API_KEY,
+  BCF: process.env.GHL_BCF_API_KEY,
+  BWDS: process.env.GHL_BGR_API_KEY,
 }
 
 interface GHLPushParams {
@@ -19,9 +24,9 @@ interface GHLPushParams {
 }
 
 export async function pushToGHL(params: GHLPushParams): Promise<void> {
-  const apiKey = process.env.GHL_API_KEY
+  const apiKey = API_KEYS[params.company]
   if (!apiKey) {
-    console.warn('[ghl] GHL_API_KEY not set — skipping push')
+    console.warn(`[ghl] No API key for company ${params.company} — skipping push`)
     return
   }
 

@@ -8,8 +8,8 @@ RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
 WORKDIR /app
 
-# Copy workspace manifests
-COPY package.json pnpm-workspace.yaml ./
+# Copy workspace manifests + lockfile
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/db/package.json ./packages/db/
 COPY apps/api/package.json ./apps/api/
 

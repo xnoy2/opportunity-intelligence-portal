@@ -67,8 +67,9 @@ export const leadsRoutes: FastifyPluginAsync = async server => {
     const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000)
     const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
 
-    const [newToday, highValue, approved, pipeline] = await Promise.all([
+    const [newToday, newThisWeek, highValue, approved, pipeline, byCompanyRaw, tourism, farmDiv] = await Promise.all([
       server.prisma.lead.count({ where: { ...companyWhere, createdAt: { gte: since24h } } }),
+      server.prisma.lead.count({ where: { ...companyWhere, createdAt: { gte: since7d } } }),
       server.prisma.lead.count({ where: { ...companyWhere, leadScore: { gte: 85 } } }),
       server.prisma.lead.count({ where: { ...companyWhere, dateApproved: { gte: since7d } } }),
       server.prisma.lead.aggregate({
@@ -76,14 +77,34 @@ export const leadsRoutes: FastifyPluginAsync = async server => {
         _sum: { estimatedValue: true },
         _count: true,
       }),
+      server.prisma.lead.groupBy({
+        by: ['assignedCompany'],
+        where: companyWhere,
+        _count: { id: true },
+      }),
+      server.prisma.lead.count({
+        where: { ...companyWhere, projectType: { contains: 'tourism', mode: 'insensitive' } },
+      }),
+      server.prisma.lead.count({
+        where: { ...companyWhere, projectType: { contains: 'farm', mode: 'insensitive' } },
+      }),
     ])
+
+    const byCompany: Record<string, number> = {}
+    for (const row of byCompanyRaw) {
+      if (row.assignedCompany) byCompany[row.assignedCompany] = row._count.id
+    }
 
     return {
       newToday,
+      newThisWeek,
       highValue,
       approved,
       activePipeline: pipeline._count,
       pipelineValue: pipeline._sum.estimatedValue ?? 0,
+      byCompany,
+      tourism,
+      farmDiv,
     }
   })
 
