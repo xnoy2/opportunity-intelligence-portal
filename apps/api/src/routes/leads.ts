@@ -4,14 +4,26 @@ import { requireAuth, getCompanyFilter } from '../middleware/auth.js'
 import type { Company, LeadStatus } from '@bcf/db'
 
 const querySchema = z.object({
-  status: z.string().optional(),
-  company: z.string().optional(),
-  minScore: z.coerce.number().optional(),
-  region: z.string().optional(),
-  since: z.string().datetime().optional(),
-  limit: z.coerce.number().default(50),
-  offset: z.coerce.number().default(0),
+  status:     z.string().optional(),
+  company:    z.string().optional(),
+  minScore:   z.coerce.number().optional(),
+  region:     z.string().optional(),
+  since:      z.string().datetime().optional(),
+  category:   z.enum(['approved', 'high_value', 'tourism', 'commercial']).optional(),
+  unactioned: z.coerce.boolean().optional(),
+  limit:      z.coerce.number().default(50),
+  offset:     z.coerce.number().default(0),
 })
+
+function categoryWhere(category: string | undefined) {
+  switch (category) {
+    case 'approved':   return { dateApproved: { not: null } }
+    case 'high_value': return { leadScore: { gte: 85 } }
+    case 'tourism':    return { projectType: { contains: 'tourism', mode: 'insensitive' as const } }
+    case 'commercial': return { projectType: { contains: 'commercial', mode: 'insensitive' as const } }
+    default:           return {}
+  }
+}
 
 export const leadsRoutes: FastifyPluginAsync = async server => {
   server.addHook('preHandler', requireAuth)
@@ -28,6 +40,8 @@ export const leadsRoutes: FastifyPluginAsync = async server => {
       ...(q.minScore !== undefined && { leadScore: { gte: q.minScore } }),
       ...(q.region && { sourceRegion: q.region }),
       ...(q.since && { createdAt: { gte: new Date(q.since) } }),
+      ...categoryWhere(q.category),
+      ...(q.unactioned && { status: { in: ['NEW', 'REVIEWED'] as LeadStatus[] } }),
     }
 
     const [leads, total] = await Promise.all([
@@ -65,13 +79,14 @@ export const leadsRoutes: FastifyPluginAsync = async server => {
     const companyFilter = getCompanyFilter(request)
     const companyWhere = companyFilter ? { assignedCompany: companyFilter } : {}
     const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000)
-    const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    const since7d  = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
 
-    const [newToday, newThisWeek, highValue, approved, pipeline, byCompanyRaw, tourism, farmDiv] = await Promise.all([
+    const [newToday, newThisWeek, highValue, approved, pipeline,
+           byCompanyRaw, tourism, farmDiv, unactioned, lastScrape] = await Promise.all([
       server.prisma.lead.count({ where: { ...companyWhere, createdAt: { gte: since24h } } }),
       server.prisma.lead.count({ where: { ...companyWhere, createdAt: { gte: since7d } } }),
       server.prisma.lead.count({ where: { ...companyWhere, leadScore: { gte: 85 } } }),
-      server.prisma.lead.count({ where: { ...companyWhere, dateApproved: { gte: since7d } } }),
+      server.prisma.lead.count({ where: { ...companyWhere, dateApproved: { not: null } } }),
       server.prisma.lead.aggregate({
         where: { ...companyWhere, status: { notIn: ['WON', 'LOST'] } },
         _sum: { estimatedValue: true },
@@ -88,6 +103,14 @@ export const leadsRoutes: FastifyPluginAsync = async server => {
       server.prisma.lead.count({
         where: { ...companyWhere, projectType: { contains: 'farm', mode: 'insensitive' } },
       }),
+      server.prisma.lead.count({
+        where: { ...companyWhere, status: { in: ['NEW', 'REVIEWED'] } },
+      }),
+      server.prisma.scrapeLog.findFirst({
+        where: { status: 'success' },
+        orderBy: { runAt: 'desc' },
+        select: { runAt: true, source: true },
+      }),
     ])
 
     const byCompany: Record<string, number> = {}
@@ -101,10 +124,12 @@ export const leadsRoutes: FastifyPluginAsync = async server => {
       highValue,
       approved,
       activePipeline: pipeline._count,
-      pipelineValue: pipeline._sum.estimatedValue ?? 0,
+      pipelineValue:  pipeline._sum.estimatedValue ?? 0,
       byCompany,
       tourism,
       farmDiv,
+      unactioned,
+      lastScrape: lastScrape?.runAt ?? null,
     }
   })
 

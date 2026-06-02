@@ -74,4 +74,8 @@ export interface StatsResponse {
   byCompany: Record<string, number>
   tourism: number
   farmDiv: number
+  unactioned: number
+  lastScrape: string | null
 }
+
+export type LeadCategory = 'all' | 'approved' | 'high_value' | 'tourism' | 'commercial'

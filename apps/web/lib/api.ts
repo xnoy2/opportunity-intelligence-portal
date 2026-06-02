@@ -58,6 +58,8 @@ export interface LeadFilters {
   company?: string
   minScore?: number
   region?: string
+  category?: string
+  unactioned?: boolean
   limit?: number
   offset?: number
 }
@@ -94,4 +96,8 @@ export async function addNote(leadId: string, note: string): Promise<PipelineNot
 
 export async function getScrapeLogs(): Promise<ScrapeLog[]> {
   return request<ScrapeLog[]>('/pipeline/scrape-logs')
+}
+
+export async function triggerScrape(source = 'ni'): Promise<{ queued: boolean; source: string }> {
+  return request('/pipeline/scrape', { method: 'POST', body: JSON.stringify({ source }) })
 }

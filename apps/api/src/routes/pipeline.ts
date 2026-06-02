@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { requireAuth, getCompanyFilter } from '../middleware/auth.js'
+import { triggerScraper } from '../jobs/scheduler.js'
 
 const noteSchema = z.object({
   leadId: z.string(),
@@ -32,11 +33,24 @@ export const pipelineRoutes: FastifyPluginAsync = async server => {
     return created
   })
 
-  // GET /pipeline/recent — last 20 scrape run summaries
+  // GET /pipeline/scrape-logs — last 20 scrape run summaries
   server.get('/scrape-logs', async () => {
     return server.prisma.scrapeLog.findMany({
       orderBy: { runAt: 'desc' },
       take: 20,
     })
+  })
+
+  // POST /pipeline/scrape — manually trigger a scraper run (admin only)
+  server.post('/scrape', async (request, reply) => {
+    if (request.user.role !== 'ADMIN') {
+      return reply.status(403).send({ error: 'Admin only' })
+    }
+    const { source = 'ni' } = (request.body ?? {}) as { source?: string }
+    if (!['ni', 'roi'].includes(source)) {
+      return reply.status(400).send({ error: 'Invalid source' })
+    }
+    await triggerScraper(source as 'ni' | 'roi')
+    return { queued: true, source }
   })
 }
