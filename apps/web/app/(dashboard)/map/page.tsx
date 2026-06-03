@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
 import Topbar from '@/components/ui/Topbar'
 import CompanyBadge from '@/components/leads/CompanyBadge'
+import ScoreFilter from '@/components/ui/ScoreFilter'
 import { getMapLeads } from '@/lib/api'
 import type { MapLead } from '@/types'
 
@@ -76,15 +77,7 @@ export default function MapPage() {
         </div>
 
         {/* Score filter */}
-        <select
-          value={minScore}
-          onChange={e => setMinScore(Number(e.target.value))}
-          className="bg-navy border border-navy-border text-white text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-gold/50"
-        >
-          <option value={0}>Any score</option>
-          <option value={70}>Score 70+</option>
-          <option value={85}>Score 85+</option>
-        </select>
+        <ScoreFilter value={minScore} onChange={setMinScore} />
 
         <span className="ml-auto text-muted text-xs">
           {loading ? 'Loading…' : `${filtered.length} plotted`}

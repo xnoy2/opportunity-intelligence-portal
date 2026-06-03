@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import Topbar from '@/components/ui/Topbar'
 import CompanyBadge from '@/components/leads/CompanyBadge'
+import ScoreFilter from '@/components/ui/ScoreFilter'
 import { getLeads } from '@/lib/api'
 import type { Lead, LeadCategory } from '@/types'
 
@@ -83,6 +84,7 @@ export default function LeadsPage() {
   const [loading, setLoading]       = useState(true)
   const [tab, setTab]               = useState<LeadCategory>('all')
   const [showActioned, setShowActioned] = useState(false)
+  const [minScore, setMinScore]     = useState(0)
   const [offset, setOffset]         = useState(0)
   const LIMIT = 50
 
@@ -92,13 +94,14 @@ export default function LeadsPage() {
       const filters: Record<string, unknown> = { limit: LIMIT, offset: off }
       if (tab !== 'all') filters.category = tab
       if (!showActioned) filters.unactioned = true
+      if (minScore > 0) filters.minScore = minScore
       const res = await getLeads(filters)
       setLeads(res.leads)
       setTotal(res.total)
       setOffset(off)
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
-  }, [tab, showActioned])
+  }, [tab, showActioned, minScore])
 
   useEffect(() => { load(0) }, [load])
 
@@ -127,8 +130,9 @@ export default function LeadsPage() {
               </button>
             ))}
 
-            {/* Show actioned toggle */}
-            <div className="ml-auto flex items-center gap-2 pb-2.5 whitespace-nowrap">
+            {/* Score filter + Show actioned toggle */}
+            <div className="ml-auto flex items-center gap-3 pb-2.5 whitespace-nowrap">
+              <ScoreFilter value={minScore} onChange={setMinScore} />
               <span className="text-muted text-xs">Show actioned</span>
               <button
                 onClick={() => setShowActioned(v => !v)}

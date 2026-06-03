@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Topbar from '@/components/ui/Topbar'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import CompanyBadge from '@/components/leads/CompanyBadge'
+import ScoreFilter from '@/components/ui/ScoreFilter'
 import { getStats, getLeads, triggerScrape } from '@/lib/api'
 import type { StatsResponse, Lead, LeadCategory } from '@/types'
 
@@ -108,10 +109,13 @@ export default function DashboardPage() {
   const [loading, setLoading]   = useState(true)
   const [scanning, setScanning] = useState(false)
   const [tab, setTab]           = useState<LeadCategory>('all')
+  const [minScore, setMinScore] = useState(0)
 
-  const loadLeads = useCallback(async (category: LeadCategory) => {
-    const filters = category === 'all' ? {} : { category }
-    const res = await getLeads({ limit: 20, ...filters })
+  const loadLeads = useCallback(async (category: LeadCategory, score: number) => {
+    const filters: Record<string, unknown> = { limit: 20 }
+    if (category !== 'all') filters.category = category
+    if (score > 0) filters.minScore = score
+    const res = await getLeads(filters)
     setLeads(res.leads)
   }, [])
 
@@ -123,8 +127,8 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => {
-    if (!loading) loadLeads(tab).catch(console.error)
-  }, [tab, loading, loadLeads])
+    if (!loading) loadLeads(tab, minScore).catch(console.error)
+  }, [tab, minScore, loading, loadLeads])
 
   async function handleScan() {
     setScanning(true)
@@ -221,9 +225,12 @@ export default function DashboardPage() {
               </button>
             ))}
 
-            <Link href="/leads" className="ml-auto text-muted text-xs hover:text-white transition-colors pb-2.5 whitespace-nowrap">
-              View all →
-            </Link>
+            <div className="ml-auto flex items-center gap-3 pb-2.5">
+              <ScoreFilter value={minScore} onChange={setMinScore} />
+              <Link href="/leads" className="text-muted text-xs hover:text-white transition-colors whitespace-nowrap">
+                View all →
+              </Link>
+            </div>
           </div>
 
           {/* Lead cards */}
