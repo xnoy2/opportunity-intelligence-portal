@@ -10,72 +10,72 @@
 
 @layer base {
   :root {
-    /* Surfaces */
-    --background: 33 100% 97%;          /* surface */
-    --foreground: 40 24% 10%;           /* on-surface */
-    --card: 36 100% 99%;                /* surface-container-low (elevated cards) */
-    --card-foreground: 40 24% 10%;
-    --surface-container: 34 45% 93%;
-    --surface-container-high: 35 40% 90%;
-    --surface-container-highest: 34 35% 87%;
+    /* Surfaces — cool slate neutrals */
+    --background: 210 40% 98%;          /* slate-50 */
+    --foreground: 222 47% 11%;          /* slate-900 */
+    --card: 0 0% 100%;                  /* white (elevated cards) */
+    --card-foreground: 222 47% 11%;
+    --surface-container: 210 40% 96%;   /* slate-100 */
+    --surface-container-high: 214 32% 91%;  /* slate-200 */
+    --surface-container-highest: 213 27% 84%; /* slate-300 */
 
     /* Muted / variant */
-    --muted: 34 45% 93%;                /* surface-container (filled fields) */
-    --muted-foreground: 38 16% 36%;     /* on-surface-variant */
-    --accent: 41 70% 90%;               /* state-layer / hover surface */
-    --accent-foreground: 40 24% 12%;
+    --muted: 210 40% 96%;               /* slate-100 (filled fields) */
+    --muted-foreground: 215 16% 47%;    /* slate-500 */
+    --accent: 210 40% 96%;              /* hover surface */
+    --accent-foreground: 222 47% 11%;
 
-    /* Primary (gold) */
-    --primary: 43 100% 31%;
+    /* Primary (indigo) */
+    --primary: 243 75% 59%;             /* indigo-600 */
     --primary-foreground: 0 0% 100%;
-    --primary-container: 43 100% 85%;
-    --on-primary-container: 42 100% 11%;
+    --primary-container: 226 100% 94%;  /* indigo-100 */
+    --on-primary-container: 243 47% 34%; /* indigo-900 */
 
     /* Lines */
-    --border: 36 27% 80%;               /* outline-variant */
-    --outline: 40 14% 45%;
-    --input: 36 22% 84%;
-    --ring: 43 100% 31%;
+    --border: 214 32% 91%;              /* slate-200 */
+    --outline: 215 20% 65%;             /* slate-400 */
+    --input: 213 27% 84%;               /* slate-300 */
+    --ring: 243 75% 59%;
 
-    /* Semantic (tonal) */
-    --success: 142 52% 36%;
-    --warning: 32 90% 40%;
-    --danger: 0 75% 42%;
-    --info: 213 80% 44%;
-    --violet: 262 55% 52%;
+    /* Semantic */
+    --success: 160 84% 31%;             /* emerald-600 */
+    --warning: 32 95% 44%;              /* amber-600 */
+    --danger: 0 72% 51%;                /* red-600 */
+    --info: 200 98% 39%;                /* sky-600 */
+    --violet: 262 83% 58%;              /* violet-600 */
 
     --radius: 1rem;
   }
 
   .dark {
-    --background: 42 33% 6%;
-    --foreground: 36 33% 87%;
-    --card: 39 23% 12%;                 /* surface-container */
-    --card-foreground: 36 33% 87%;
-    --surface-container: 39 23% 12%;
-    --surface-container-high: 38 18% 16%;
-    --surface-container-highest: 37 16% 20%;
+    --background: 222 47% 11%;          /* slate-900 */
+    --foreground: 210 40% 96%;          /* slate-100 */
+    --card: 217 33% 17%;                /* slate-800 */
+    --card-foreground: 210 40% 96%;
+    --surface-container: 217 33% 17%;   /* slate-800 */
+    --surface-container-high: 215 25% 27%;  /* slate-700 */
+    --surface-container-highest: 215 19% 35%; /* slate-600 */
 
-    --muted: 38 18% 16%;
-    --muted-foreground: 36 22% 70%;
-    --accent: 40 18% 20%;
-    --accent-foreground: 36 33% 87%;
+    --muted: 217 33% 17%;               /* slate-800 */
+    --muted-foreground: 215 20% 65%;    /* slate-400 */
+    --accent: 215 25% 27%;              /* slate-700 */
+    --accent-foreground: 210 40% 96%;
 
-    --primary: 43 88% 62%;
-    --primary-foreground: 44 100% 12%;
-    --primary-container: 44 100% 20%;
-    --on-primary-container: 43 100% 82%;
+    --primary: 235 94% 74%;             /* indigo-400 */
+    --primary-foreground: 244 47% 20%;  /* indigo-950 */
+    --primary-container: 243 53% 42%;   /* indigo-800 */
+    --on-primary-container: 226 100% 94%; /* indigo-100 */
 
-    --border: 38 14% 26%;
-    --outline: 38 13% 55%;
-    --input: 38 14% 30%;
-    --ring: 43 88% 62%;
+    --border: 215 25% 27%;              /* slate-700 */
+    --outline: 215 19% 35%;             /* slate-600 */
+    --input: 215 19% 35%;
+    --ring: 235 94% 74%;
 
-    --success: 142 46% 56%;
-    --warning: 34 85% 62%;
-    --danger: 6 100% 80%;
-    --info: 213 90% 72%;
-    --violet: 262 70% 76%;
+    --success: 160 64% 52%;             /* emerald-400 */
+    --warning: 43 96% 56%;              /* amber-400 */
+    --danger: 0 91% 71%;                /* red-400 */
+    --info: 199 92% 60%;                /* sky-400 */
+    --violet: 255 92% 76%;              /* violet-400 */
   }
 
   * {
