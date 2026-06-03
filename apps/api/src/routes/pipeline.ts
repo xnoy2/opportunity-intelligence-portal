@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { requireAuth, getCompanyFilter } from '../middleware/auth.js'
 import { triggerScraper } from '../jobs/scheduler.js'
 import { makeQueue } from '../jobs/queue.js'
+import { sendWeeklyDigest, getDigestPreview } from '../services/digest.js'
 
 const noteSchema = z.object({
   leadId: z.string(),
@@ -59,16 +60,31 @@ export const pipelineRoutes: FastifyPluginAsync = async server => {
     return { queued: unclassified.length }
   })
 
+  // GET /pipeline/digest/preview — preview digest HTML (admin only)
+  server.get('/digest/preview', async (request, reply) => {
+    if (request.user.role !== 'ADMIN') return reply.status(403).send({ error: 'Admin only' })
+    const preview = await getDigestPreview()
+    return reply.type('text/html').send(preview.html)
+  })
+
+  // POST /pipeline/digest/send — manually send the weekly digest (admin only)
+  server.post('/digest/send', async (request, reply) => {
+    if (request.user.role !== 'ADMIN') return reply.status(403).send({ error: 'Admin only' })
+    await sendWeeklyDigest()
+    return { sent: true }
+  })
+
   // POST /pipeline/scrape — manually trigger a scraper run (admin only)
   server.post('/scrape', async (request, reply) => {
     if (request.user.role !== 'ADMIN') {
       return reply.status(403).send({ error: 'Admin only' })
     }
     const { source = 'ni' } = (request.body ?? {}) as { source?: string }
-    if (!['ni', 'roi', 'pleanala'].includes(source)) {
-      return reply.status(400).send({ error: 'Invalid source. Use: ni, roi, pleanala' })
+    const VALID = ['ni', 'roi', 'pleanala', 'england', 'daera']
+    if (!VALID.includes(source)) {
+      return reply.status(400).send({ error: `Invalid source. Use: ${VALID.join(', ')}` })
     }
-    await triggerScraper(source as 'ni' | 'roi' | 'pleanala')
+    await triggerScraper(source as Parameters<typeof triggerScraper>[0])
     return { queued: true, source }
   })
 }

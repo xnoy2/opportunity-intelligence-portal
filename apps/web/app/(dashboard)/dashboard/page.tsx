@@ -134,6 +134,8 @@ export default function DashboardPage() {
         triggerScrape('ni'),
         triggerScrape('roi'),
         triggerScrape('pleanala'),
+        triggerScrape('england'),
+        triggerScrape('daera'),
       ])
       const s = await getStats()
       setStats(s)
