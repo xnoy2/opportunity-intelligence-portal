@@ -1,10 +1,16 @@
 import type { FastifyPluginAsync } from 'fastify'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
+import { requireAuth } from '../middleware/auth.js'
 
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
+})
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8),
 })
 
 export const authRoutes: FastifyPluginAsync = async server => {
@@ -41,5 +47,23 @@ export const authRoutes: FastifyPluginAsync = async server => {
       select: { id: true, email: true, name: true, company: true, role: true },
     })
     return user
+  })
+
+  // POST /auth/change-password — requires current password
+  server.post('/change-password', { preHandler: requireAuth }, async (request, reply) => {
+    const body = changePasswordSchema.safeParse(request.body)
+    if (!body.success) return reply.status(400).send({ error: 'New password must be at least 8 characters' })
+
+    const { currentPassword, newPassword } = body.data
+    const { id } = request.user
+
+    const user = await server.prisma.user.findUniqueOrThrow({ where: { id } })
+    const valid = await bcrypt.compare(currentPassword, user.password)
+    if (!valid) return reply.status(401).send({ error: 'Current password is incorrect' })
+
+    const hash = await bcrypt.hash(newPassword, 10)
+    await server.prisma.user.update({ where: { id }, data: { password: hash } })
+
+    return { ok: true }
   })
 }
