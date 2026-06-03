@@ -1,23 +1,31 @@
 import { makeQueue } from './queue.js'
 
 export function startScheduler() {
-  const scraperQueue = makeQueue('scrapers')
+  const q = makeQueue('scrapers')
 
-  scraperQueue.add('ni-scraper', { source: 'ni' }, {
+  // NI planning register — daily 6:00am
+  q.add('ni-scraper', { source: 'ni' }, {
     repeat: { pattern: '0 6 * * *' },
     jobId: 'cron:ni-scraper',
   })
 
-  scraperQueue.add('roi-scraper', { source: 'roi' }, {
+  // ROI eplanning.ie (25 councils) — daily 6:30am
+  q.add('roi-scraper', { source: 'roi' }, {
     repeat: { pattern: '30 6 * * *' },
     jobId: 'cron:roi-scraper',
   })
 
-  console.log('[scheduler] Scraper cron jobs registered')
+  // An Coimisiún Pleanála appeals — weekly Sunday 7:00am (data updated weekly)
+  q.add('pleanala-scraper', { source: 'pleanala' }, {
+    repeat: { pattern: '0 7 * * 0' },
+    jobId: 'cron:pleanala-scraper',
+  })
+
+  console.log('[scheduler] Scraper cron jobs registered (NI daily, ROI daily, Pleanála weekly)')
 }
 
-export async function triggerScraper(source: 'ni' | 'roi') {
-  const scraperQueue = makeQueue('scrapers')
-  await scraperQueue.add(`manual:${source}`, { source }, { priority: 1 })
+export async function triggerScraper(source: 'ni' | 'roi' | 'pleanala') {
+  const q = makeQueue('scrapers')
+  await q.add(`manual:${source}`, { source }, { priority: 1 })
   console.log(`[scheduler] Manual run queued for ${source}`)
 }

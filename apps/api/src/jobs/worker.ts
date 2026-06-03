@@ -1,6 +1,8 @@
 import { Worker } from 'bullmq'
 import { getConnection, makeQueue } from './queue.js'
 import { scrapeNI } from './scrapers/ni.js'
+import { scrapeROIEplanning } from './scrapers/roi-eplanning.js'
+import { scrapeROIPleanala } from './scrapers/roi-pleanala.js'
 import { classifyLead } from '../services/classifier.js'
 import { prisma } from '@bcf/db'
 import { pushToGHL } from '../services/ghl.js'
@@ -16,7 +18,9 @@ new Worker('scrapers', async job => {
   try {
     let result = { found: 0, inserted: 0 }
 
-    if (source === 'ni') result = await scrapeNI()
+    if (source === 'ni')              result = await scrapeNI()
+    else if (source === 'roi')        result = await scrapeROIEplanning()
+    else if (source === 'pleanala')   result = await scrapeROIPleanala()
     else console.log(`[worker] ${source} scraper not yet implemented`)
 
     await prisma.scrapeLog.create({

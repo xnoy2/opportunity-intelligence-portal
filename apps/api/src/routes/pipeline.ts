@@ -65,10 +65,10 @@ export const pipelineRoutes: FastifyPluginAsync = async server => {
       return reply.status(403).send({ error: 'Admin only' })
     }
     const { source = 'ni' } = (request.body ?? {}) as { source?: string }
-    if (!['ni', 'roi'].includes(source)) {
-      return reply.status(400).send({ error: 'Invalid source' })
+    if (!['ni', 'roi', 'pleanala'].includes(source)) {
+      return reply.status(400).send({ error: 'Invalid source. Use: ni, roi, pleanala' })
     }
-    await triggerScraper(source as 'ni' | 'roi')
+    await triggerScraper(source as 'ni' | 'roi' | 'pleanala')
     return { queued: true, source }
   })
 }
