@@ -4,9 +4,8 @@ import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
 import Topbar from '@/components/ui/Topbar'
 import CompanyBadge from '@/components/leads/CompanyBadge'
-import ScoreBadge from '@/components/leads/ScoreBadge'
 import { getMapLeads } from '@/lib/api'
-import type { MapLead, Company } from '@/types'
+import type { MapLead } from '@/types'
 
 // Leaflet must be loaded client-side only — no SSR
 const LeafletMap = dynamic(() => import('@/components/map/LeafletMap'), { ssr: false, loading: () => (
@@ -51,7 +50,7 @@ export default function MapPage() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col" style={{ height: '100vh' }}>
       <Topbar title="Opportunity Map" />
 
       {/* Filter bar */}
