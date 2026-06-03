@@ -122,8 +122,8 @@ function parseResults(html: string, council: string): ROIApplication[] {
     const status     = cells.eq(1).text().trim()
     const receivedTxt = cells.eq(5).text().trim()
     const applicant  = cells.eq(6).text().trim()
-    const address    = cells.eq(7).text().trim()
-    const desc       = cells.eq(8).text().trim()
+    const address    = cells.eq(7).text().replace(/\s+/g, ' ').trim()
+    const desc       = cells.eq(8).text().replace(/\s+/g, ' ').trim()
     const authority  = cells.eq(9).text().trim()
     const href       = cells.eq(0).find('a').attr('href') ?? ''
 
