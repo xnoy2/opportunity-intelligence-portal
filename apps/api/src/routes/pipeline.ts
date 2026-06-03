@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { requireAuth, getCompanyFilter } from '../middleware/auth.js'
 import { triggerScraper } from '../jobs/scheduler.js'
+import { makeQueue } from '../jobs/queue.js'
 
 const noteSchema = z.object({
   leadId: z.string(),
