@@ -35,16 +35,25 @@ Apply these score modifiers:
 
 High-value categories: holiday pods/glamping (£15k-£80k+), farm diversification, tourism accommodation. Flag these as CRITICAL.
 
-OUTPUT FORMAT — respond with a single JSON object and nothing else. Use exactly these keys:
-{
-  "project_type": string,            // short description of the project, e.g. "Garden room", "Window replacement", "GAA sports facility"
-  "assigned_company": string,        // one of: "BGR", "BWDS", "BCF", "MULTIPLE" (use MULTIPLE only when genuinely cross-company; pick the single best fit otherwise)
-  "lead_score": number,              // integer 0-100 using the weighting above
-  "estimated_value_gbp": number,     // integer best-estimate project value in GBP, 0 if truly unknown
-  "ai_summary": string,              // 1-2 sentence summary of the opportunity for the sales team
-  "suggested_action": string         // concrete next step, e.g. "Call applicant to discuss garden room options"
+Use the record_classification tool to return your analysis.`
+
+// Forced tool call guarantees a structured, schema-valid response.
+const CLASSIFY_TOOL = {
+  name: 'record_classification',
+  description: 'Record the structured classification of a planning-application lead.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      project_type:        { type: 'string', description: 'Short project description, e.g. "Garden room", "Window replacement"' },
+      assigned_company:    { type: 'string', enum: ['BGR', 'BWDS', 'BCF', 'MULTIPLE'], description: 'Best-fit company; MULTIPLE only when genuinely cross-company' },
+      lead_score:          { type: 'integer', minimum: 0, maximum: 100, description: 'Lead score 0-100 using the weighting in the system prompt' },
+      estimated_value_gbp: { type: 'integer', minimum: 0, description: 'Best-estimate project value in GBP, 0 if truly unknown' },
+      ai_summary:          { type: 'string', description: '1-2 sentence summary of the opportunity for the sales team' },
+      suggested_action:    { type: 'string', description: 'Concrete next step for the sales team' },
+    },
+    required: ['project_type', 'assigned_company', 'lead_score', 'estimated_value_gbp', 'ai_summary', 'suggested_action'],
+  },
 }
-Do not include any other keys, commentary, or markdown.`
 
 export async function classifyLead(
   description: string,
@@ -59,27 +68,18 @@ export async function classifyLead(
     model: 'claude-sonnet-4-6',
     max_tokens: 1024,
     system: SYSTEM_PROMPT,
+    tools: [CLASSIFY_TOOL],
+    tool_choice: { type: 'tool', name: 'record_classification' },
     messages: [
-      {
-        role: 'user',
-        content: `Analyse this planning application and return the JSON object described above:\n\n${content}`,
-      },
-      // Prefill the assistant turn with an opening brace to force a JSON-only response.
-      { role: 'assistant', content: '{' },
+      { role: 'user', content: `Analyse this planning application:\n\n${content}` },
     ],
   })
 
-  const body = message.content[0].type === 'text' ? message.content[0].text : ''
-  // Re-attach the prefilled "{", then strip any stray markdown fences.
-  const text = `{${body}`.trim()
-  const clean = text.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim()
-
-  let raw: Record<string, unknown>
-  try {
-    raw = JSON.parse(clean)
-  } catch {
-    throw new Error(`Classifier returned unparseable response: ${text.slice(0, 300)}`)
+  const toolUse = message.content.find(b => b.type === 'tool_use')
+  if (!toolUse || toolUse.type !== 'tool_use') {
+    throw new Error('Classifier did not return a tool_use block')
   }
+  const raw = toolUse.input as Record<string, unknown>
 
   console.log('[classifier] Raw response:', JSON.stringify(raw).slice(0, 200))
 
