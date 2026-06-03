@@ -8,6 +8,7 @@ const nav = [
   { href: '/dashboard', label: 'Dashboard',  icon: '▦' },
   { href: '/leads',     label: 'Leads',       icon: '◎' },
   { href: '/pipeline',  label: 'Pipeline',    icon: '⬡' },
+  { href: '/map',       label: 'Map',         icon: '⊙' },
 ]
 
 export default function Sidebar() {

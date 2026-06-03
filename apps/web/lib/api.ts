@@ -105,3 +105,7 @@ export async function triggerScrape(source = 'ni'): Promise<{ queued: boolean; s
 export async function triggerReclassify(): Promise<{ queued: number }> {
   return request('/pipeline/reclassify', { method: 'POST', body: '{}' })
 }
+
+export async function getMapLeads(): Promise<import('@/types').MapLead[]> {
+  return request('/leads/map')
+}

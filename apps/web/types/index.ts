@@ -79,3 +79,18 @@ export interface StatsResponse {
 }
 
 export type LeadCategory = 'all' | 'approved' | 'high_value' | 'tourism' | 'commercial'
+
+export interface MapLead {
+  id: string
+  planningRef: string
+  projectType: string | null
+  location: string | null
+  status: LeadStatus
+  assignedCompany: Company | null
+  leadScore: number
+  estimatedValue: number | null
+  latitude: number
+  longitude: number
+  sourceRegion: string | null
+  dateSubmitted: string | null
+}

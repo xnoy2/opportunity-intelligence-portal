@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { requireAuth, getCompanyFilter } from '../middleware/auth.js'
+import { syncStatusToGHL } from '../services/ghl.js'
 import type { Company, LeadStatus } from '@bcf/db'
 
 const querySchema = z.object({
@@ -156,6 +157,29 @@ export const leadsRoutes: FastifyPluginAsync = async server => {
     }
   })
 
+  // GET /leads/map — geocoded leads for the interactive map
+  server.get('/map', async request => {
+    const companyFilter = getCompanyFilter(request)
+    const where = {
+      ...(companyFilter && { assignedCompany: companyFilter }),
+      latitude:  { not: null },
+      longitude: { not: null },
+    }
+    const leads = await server.prisma.lead.findMany({
+      where,
+      orderBy: { leadScore: 'desc' },
+      take: 500,
+      select: {
+        id: true, planningRef: true, projectType: true,
+        location: true, status: true, assignedCompany: true,
+        leadScore: true, estimatedValue: true,
+        latitude: true, longitude: true,
+        sourceRegion: true, dateSubmitted: true,
+      },
+    })
+    return leads
+  })
+
   // GET /leads/:id — full detail
   server.get('/:id', async (request, reply) => {
     const { id } = request.params as { id: string }
@@ -190,6 +214,13 @@ export const leadsRoutes: FastifyPluginAsync = async server => {
       where: { id },
       data: { status },
     })
+
+    // Sync pipeline stage to GHL if this lead has a GHL contact
+    if (lead.ghlContactId && lead.assignedCompany) {
+      syncStatusToGHL(lead.ghlContactId, lead.assignedCompany, status).catch(err =>
+        server.log.error('[ghl-sync] ' + err.message)
+      )
+    }
 
     return updated
   })
