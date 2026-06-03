@@ -25,7 +25,7 @@ function LeadCard({ lead, onMove }: { lead: Lead; onMove: (id: string, status: L
   const nextStages = STAGES.filter(s => s.key !== lead.status && s.key !== 'LOST')
 
   return (
-    <div className="group rounded-lg border border-border bg-background p-3 transition-shadow hover:shadow-soft">
+    <div className="rounded-2xl bg-card p-3.5 shadow-e1 transition-shadow hover:shadow-e2">
       <div className="flex items-start justify-between gap-2">
         <Link
           href={`/leads/${lead.id}`}
@@ -45,12 +45,12 @@ function LeadCard({ lead, onMove }: { lead: Lead; onMove: (id: string, status: L
       </div>
 
       {/* Quick move */}
-      <div className="mt-2.5 flex flex-wrap gap-1 border-t border-border pt-2.5">
+      <div className="mt-3 flex flex-wrap gap-1.5 border-t border-border pt-3">
         {nextStages.slice(0, 2).map(s => (
           <button
             key={s.key}
             onClick={() => onMove(lead.id, s.key)}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="state-layer inline-flex items-center gap-1 rounded-lg border border-outline px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowRight className="h-2.5 w-2.5" /> {s.label}
           </button>
@@ -58,7 +58,7 @@ function LeadCard({ lead, onMove }: { lead: Lead; onMove: (id: string, status: L
         {lead.status !== 'LOST' && (
           <button
             onClick={() => onMove(lead.id, 'LOST')}
-            className="ml-auto inline-flex items-center gap-1 rounded-md border border-danger/20 px-2 py-0.5 text-[10px] font-medium text-danger/70 transition-colors hover:border-danger/50 hover:text-danger"
+            className="state-layer ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-medium text-danger transition-colors"
           >
             <X className="h-2.5 w-2.5" /> Lost
           </button>
@@ -92,15 +92,15 @@ export default function PipelinePage() {
 
   return (
     <div>
-      <Topbar title="Pipeline" subtitle="Drag leads through your sales stages" />
+      <Topbar title="Pipeline" subtitle="Move leads through your sales stages" />
 
       <div className="p-6">
         {loading ? (
           <div className="flex gap-4 overflow-x-auto pb-4">
             {STAGES.map(s => (
-              <div key={s.key} className="w-64 flex-shrink-0 space-y-2 rounded-lg border border-border bg-card p-3">
+              <div key={s.key} className="w-64 flex-shrink-0 space-y-2 rounded-3xl bg-surface-container p-3">
                 <div className="skeleton h-4 w-24" />
-                {Array.from({ length: 2 }).map((_, i) => <div key={i} className="skeleton h-24" />)}
+                {Array.from({ length: 2 }).map((_, i) => <div key={i} className="skeleton h-24 rounded-2xl" />)}
               </div>
             ))}
           </div>
@@ -110,21 +110,21 @@ export default function PipelinePage() {
               const cards = byStage(stage.key)
               const val = stageValue(stage.key)
               return (
-                <div key={stage.key} className="flex w-64 flex-shrink-0 flex-col rounded-lg border border-border bg-card">
+                <div key={stage.key} className="flex w-64 flex-shrink-0 flex-col rounded-3xl bg-surface-container">
                   {/* Column header */}
-                  <div className="border-b border-border px-3 py-3">
+                  <div className="px-4 py-3.5">
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                      <span className="flex items-center gap-2 text-sm font-medium text-foreground">
                         <span className={`h-2 w-2 rounded-full ${stage.accent}`} />
                         {stage.label}
                       </span>
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground">{cards.length}</span>
+                      <span className="rounded-full bg-card px-2 py-0.5 text-xs tabular-nums text-muted-foreground">{cards.length}</span>
                     </div>
                     {val > 0 && <p className="mt-1 pl-4 text-xs font-medium text-primary">{fmtCurrency(val)}</p>}
                   </div>
 
                   {/* Cards */}
-                  <div className="flex-1 space-y-2 overflow-y-auto p-2">
+                  <div className="flex-1 space-y-2.5 overflow-y-auto px-2.5 pb-2.5">
                     {cards.length === 0 ? (
                       <p className="py-8 text-center text-xs text-muted-foreground">Empty</p>
                     ) : (

@@ -9,19 +9,19 @@ import type { Lead } from '@/types'
 
 export default function LeadRow({ lead, showPending = false }: { lead: Lead; showPending?: boolean }) {
   const scoreTone =
-    lead.leadScore >= 85 ? 'text-success' :
-    lead.leadScore >= 70 ? 'text-warning' :
-    'text-muted-foreground'
+    lead.leadScore >= 85 ? 'bg-success/15 text-success' :
+    lead.leadScore >= 70 ? 'bg-warning/15 text-warning' :
+    'bg-muted text-muted-foreground'
 
   return (
     <Link
       href={`/leads/${lead.id}`}
-      className="group flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-accent/60"
+      className="state-layer flex items-center gap-4 px-5 py-3.5 text-foreground transition-colors"
     >
       {/* Score */}
-      <div className="flex h-11 w-11 flex-shrink-0 flex-col items-center justify-center rounded-xl bg-muted ring-1 ring-border">
-        <span className={`text-base font-bold leading-none tabular-nums ${scoreTone}`}>{lead.leadScore}</span>
-        <span className="mt-0.5 text-[8px] font-medium uppercase tracking-wider text-muted-foreground">score</span>
+      <div className={`flex h-12 w-12 flex-shrink-0 flex-col items-center justify-center rounded-2xl ${scoreTone}`}>
+        <span className="text-base font-medium leading-none tabular-nums">{lead.leadScore}</span>
+        <span className="mt-0.5 text-[8px] font-medium uppercase tracking-wider opacity-70">score</span>
       </div>
 
       {/* Details */}
@@ -48,11 +48,11 @@ export default function LeadRow({ lead, showPending = false }: { lead: Lead; sho
       {/* Value + chevron */}
       <div className="flex flex-shrink-0 items-center gap-3">
         {lead.estimatedValue ? (
-          <span className="text-sm font-semibold text-primary">{fmtValueRange(lead.estimatedValue)}</span>
+          <span className="text-sm font-medium text-primary">{fmtValueRange(lead.estimatedValue)}</span>
         ) : (
           <span className="text-xs text-muted-foreground">—</span>
         )}
-        <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+        <ChevronRight className="h-5 w-5 text-muted-foreground" />
       </div>
     </Link>
   )

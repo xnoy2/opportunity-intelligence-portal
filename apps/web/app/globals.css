@@ -2,63 +2,80 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Material Design 3 (Material You) — warm-gold tonal theme.
+ * Token names are kept backward-compatible (background, card, muted, primary…)
+ * but mapped to MD3 roles (surface, surface-container, primary, outline…).
+ */
+
 @layer base {
   :root {
-    --background: 220 20% 98%;
-    --foreground: 222 47% 11%;
+    /* Surfaces */
+    --background: 33 100% 97%;          /* surface */
+    --foreground: 40 24% 10%;           /* on-surface */
+    --card: 36 100% 99%;                /* surface-container-low (elevated cards) */
+    --card-foreground: 40 24% 10%;
+    --surface-container: 34 45% 93%;
+    --surface-container-high: 35 40% 90%;
+    --surface-container-highest: 34 35% 87%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    /* Muted / variant */
+    --muted: 34 45% 93%;                /* surface-container (filled fields) */
+    --muted-foreground: 38 16% 36%;     /* on-surface-variant */
+    --accent: 41 70% 90%;               /* state-layer / hover surface */
+    --accent-foreground: 40 24% 12%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
-
-    --accent: 220 14% 95%;
-    --accent-foreground: 222 47% 11%;
-
-    /* Gold — brand primary */
-    --primary: 38 52% 45%;
+    /* Primary (gold) */
+    --primary: 43 100% 31%;
     --primary-foreground: 0 0% 100%;
+    --primary-container: 43 100% 85%;
+    --on-primary-container: 42 100% 11%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 88%;
-    --ring: 38 52% 45%;
+    /* Lines */
+    --border: 36 27% 80%;               /* outline-variant */
+    --outline: 40 14% 45%;
+    --input: 36 22% 84%;
+    --ring: 43 100% 31%;
 
-    --success: 152 56% 40%;
-    --warning: 32 80% 48%;
-    --danger: 0 72% 51%;
-    --info: 213 94% 58%;
-    --violet: 262 70% 60%;
+    /* Semantic (tonal) */
+    --success: 142 52% 36%;
+    --warning: 32 90% 40%;
+    --danger: 0 75% 42%;
+    --info: 213 80% 44%;
+    --violet: 262 55% 52%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
   }
 
   .dark {
-    --background: 222 44% 8%;
-    --foreground: 210 20% 96%;
+    --background: 42 33% 6%;
+    --foreground: 36 33% 87%;
+    --card: 39 23% 12%;                 /* surface-container */
+    --card-foreground: 36 33% 87%;
+    --surface-container: 39 23% 12%;
+    --surface-container-high: 38 18% 16%;
+    --surface-container-highest: 37 16% 20%;
 
-    --card: 220 38% 12%;
-    --card-foreground: 210 20% 96%;
+    --muted: 38 18% 16%;
+    --muted-foreground: 36 22% 70%;
+    --accent: 40 18% 20%;
+    --accent-foreground: 36 33% 87%;
 
-    --muted: 219 30% 16%;
-    --muted-foreground: 215 18% 62%;
+    --primary: 43 88% 62%;
+    --primary-foreground: 44 100% 12%;
+    --primary-container: 44 100% 20%;
+    --on-primary-container: 43 100% 82%;
 
-    --accent: 219 32% 18%;
-    --accent-foreground: 210 20% 96%;
+    --border: 38 14% 26%;
+    --outline: 38 13% 55%;
+    --input: 38 14% 30%;
+    --ring: 43 88% 62%;
 
-    /* Gold — slightly brighter on dark */
-    --primary: 41 58% 56%;
-    --primary-foreground: 222 47% 11%;
-
-    --border: 218 28% 20%;
-    --input: 218 28% 24%;
-    --ring: 41 58% 56%;
-
-    --success: 152 60% 50%;
-    --warning: 34 85% 60%;
-    --danger: 0 75% 64%;
-    --info: 213 94% 64%;
-    --violet: 262 78% 70%;
+    --success: 142 46% 56%;
+    --warning: 34 85% 62%;
+    --danger: 6 100% 80%;
+    --info: 213 90% 72%;
+    --violet: 262 70% 76%;
   }
 
   * {
@@ -71,10 +88,9 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: var(--font-inter), 'Inter', system-ui, sans-serif;
+    font-family: var(--font-roboto), Roboto, system-ui, sans-serif;
   }
 
-  /* Smooth theme transition */
   html.theme-transition,
   html.theme-transition *,
   html.theme-transition *::before,
@@ -82,38 +98,39 @@
     transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
   }
 
-  ::-webkit-scrollbar {
-    @apply w-2 h-2;
-  }
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
+  ::-webkit-scrollbar { @apply w-2 h-2; }
+  ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
     @apply rounded-full;
-    background-color: hsl(var(--border));
+    background-color: hsl(var(--outline) / 0.4);
   }
-  ::-webkit-scrollbar-thumb:hover {
-    background-color: hsl(var(--muted-foreground) / 0.5);
-  }
+  ::-webkit-scrollbar-thumb:hover { background-color: hsl(var(--outline) / 0.6); }
 }
 
 @layer components {
-  .card {
-    @apply bg-card border border-border rounded-lg shadow-soft;
+  /* MD3 elevated surface */
+  .md-card {
+    @apply rounded-2xl bg-card text-card-foreground shadow-e1;
   }
 
+  /* MD3 state layer — translucent overlay on hover/press over any element */
+  .state-layer {
+    @apply relative isolate overflow-hidden;
+  }
+  .state-layer::after {
+    content: '';
+    @apply pointer-events-none absolute inset-0 -z-10 bg-current opacity-0 transition-opacity duration-150;
+  }
+  .state-layer:hover::after { @apply opacity-[0.08]; }
+  .state-layer:active::after { @apply opacity-[0.12]; }
+
   .skeleton {
-    @apply relative overflow-hidden rounded-md bg-muted;
+    @apply relative overflow-hidden rounded-lg bg-muted;
   }
   .skeleton::after {
     content: '';
     @apply absolute inset-0 -translate-x-full;
-    background-image: linear-gradient(
-      90deg,
-      transparent,
-      hsl(var(--foreground) / 0.04),
-      transparent
-    );
+    background-image: linear-gradient(90deg, transparent, hsl(var(--foreground) / 0.05), transparent);
     animation: shimmer 1.5s infinite;
   }
 

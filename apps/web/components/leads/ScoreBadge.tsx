@@ -4,14 +4,14 @@ interface Props { score: number; size?: 'sm' | 'lg' }
 
 export default function ScoreBadge({ score, size = 'sm' }: Props) {
   const tone =
-    score >= 85 ? 'bg-success/12 text-success ring-success/25' :
-    score >= 70 ? 'bg-warning/12 text-warning ring-warning/25' :
-    'bg-muted text-muted-foreground ring-border'
+    score >= 85 ? 'bg-success/15 text-success' :
+    score >= 70 ? 'bg-warning/15 text-warning' :
+    'bg-muted text-muted-foreground'
 
-  const dims = size === 'lg' ? 'h-12 w-12 text-lg rounded-xl' : 'h-9 w-10 text-sm rounded-lg'
+  const dims = size === 'lg' ? 'h-14 w-14 text-xl rounded-2xl' : 'h-10 w-10 text-sm rounded-xl'
 
   return (
-    <span className={`inline-flex items-center justify-center font-bold ring-1 tabular-nums ${dims} ${tone}`}>
+    <span className={`inline-flex items-center justify-center font-medium tabular-nums ${dims} ${tone}`}>
       {score}
     </span>
   )

@@ -50,40 +50,44 @@ export default function LeadsPage() {
     <div>
       <Topbar title="Leads" subtitle="Browse and filter scored opportunities" />
 
-      <div className="mx-auto max-w-7xl p-6">
-        <div className="card overflow-hidden">
-          {/* Tabs + toggle */}
-          <div className="flex items-center gap-1 overflow-x-auto border-b border-border px-3 pt-2">
-            {TABS.map(t => (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition-colors ${
-                  tab === t.key
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+      <div className="mx-auto max-w-7xl space-y-4 p-6">
+        {/* Filter chips */}
+        <div className="flex flex-wrap items-center gap-2">
+          {TABS.map(t => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`state-layer h-8 rounded-lg px-4 text-sm font-medium transition-colors ${
+                tab === t.key
+                  ? 'bg-primary-container text-primary-on-container'
+                  : 'border border-outline text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
 
-            <label className="ml-auto flex cursor-pointer items-center gap-2 whitespace-nowrap pb-2.5 pr-2">
-              <span className="text-xs text-muted-foreground">Show actioned</span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={showActioned}
-                onClick={() => setShowActioned(v => !v)}
-                className={`focus-ring relative h-5 w-9 rounded-full transition-colors ${showActioned ? 'bg-primary' : 'bg-input'}`}
-              >
-                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${showActioned ? 'translate-x-4' : 'translate-x-0.5'}`} />
-              </button>
-            </label>
-          </div>
+          <label className="ml-auto flex cursor-pointer items-center gap-2 whitespace-nowrap">
+            <span className="text-xs text-muted-foreground">Show actioned</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={showActioned}
+              onClick={() => setShowActioned(v => !v)}
+              className={`focus-ring relative h-6 w-11 rounded-full border-2 transition-colors ${
+                showActioned ? 'border-primary bg-primary' : 'border-outline bg-muted'
+              }`}
+            >
+              <span className={`absolute top-1/2 -translate-y-1/2 rounded-full transition-all ${
+                showActioned ? 'left-[22px] h-4 w-4 bg-primary-foreground' : 'left-1 h-3 w-3 bg-outline'
+              }`} />
+            </button>
+          </label>
+        </div>
 
+        <div className="md-card overflow-hidden">
           {/* Count line */}
-          <div className="border-b border-border px-5 py-2.5">
+          <div className="px-5 py-3">
             <p className="text-xs text-muted-foreground">
               {displayed.length} lead{displayed.length !== 1 ? 's' : ''}
               {!showActioned && <span> · unactioned only</span>}
@@ -92,7 +96,7 @@ export default function LeadsPage() {
           </div>
 
           {/* Rows */}
-          <div className="divide-y divide-border">
+          <div>
             {loading ? (
               Array.from({ length: 8 }).map((_, i) => <SkeletonLeadRow key={i} />)
             ) : displayed.length === 0 ? (
@@ -109,7 +113,7 @@ export default function LeadsPage() {
 
           {/* Pagination */}
           {total > LIMIT && (
-            <div className="flex items-center justify-between border-t border-border px-5 py-3">
+            <div className="flex items-center justify-between px-5 py-3">
               <span className="text-xs text-muted-foreground tabular-nums">
                 {offset + 1}–{Math.min(offset + LIMIT, total)} of {total}
               </span>
@@ -117,16 +121,16 @@ export default function LeadsPage() {
                 <button
                   disabled={offset === 0}
                   onClick={() => load(offset - LIMIT)}
-                  className="focus-ring inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40"
+                  className="state-layer inline-flex h-9 items-center gap-1 rounded-full border border-outline px-4 text-xs font-medium text-foreground transition-colors disabled:opacity-40"
                 >
-                  <ChevronLeft className="h-3.5 w-3.5" /> Prev
+                  <ChevronLeft className="h-4 w-4" /> Prev
                 </button>
                 <button
                   disabled={offset + LIMIT >= total}
                   onClick={() => load(offset + LIMIT)}
-                  className="focus-ring inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40"
+                  className="state-layer inline-flex h-9 items-center gap-1 rounded-full border border-outline px-4 text-xs font-medium text-foreground transition-colors disabled:opacity-40"
                 >
-                  Next <ChevronRight className="h-3.5 w-3.5" />
+                  Next <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
             </div>

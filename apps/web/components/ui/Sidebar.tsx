@@ -15,19 +15,19 @@ export default function Sidebar() {
   const path = usePathname()
 
   return (
-    <aside className="fixed left-0 top-0 z-20 flex h-screen w-60 flex-col border-r border-border bg-card">
+    <aside className="fixed left-0 top-0 z-20 flex h-screen w-64 flex-col bg-card">
       {/* Brand */}
-      <div className="flex items-center gap-2.5 px-5 py-5">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-black">
+      <div className="flex items-center gap-3 px-6 py-6">
+        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-base font-bold text-primary-foreground shadow-e1">
           B
         </span>
         <div>
-          <p className="text-sm font-semibold leading-tight text-foreground">BCF Portal</p>
-          <p className="text-[11px] leading-tight text-muted-foreground">Opportunity Intelligence</p>
+          <p className="text-base font-medium leading-tight text-foreground">BCF Portal</p>
+          <p className="text-xs leading-tight text-muted-foreground">Opportunity Intelligence</p>
         </div>
       </div>
 
-      {/* Nav */}
+      {/* Nav — MD3 drawer items with pill active indicator */}
       <nav className="flex-1 space-y-1 px-3 py-2">
         {nav.map(({ href, label, icon: Icon }) => {
           const active = path.startsWith(href)
@@ -35,13 +35,13 @@ export default function Sidebar() {
             <Link
               key={href}
               href={href}
-              className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              className={`state-layer flex h-14 items-center gap-3 rounded-full px-4 text-sm font-medium transition-colors ${
                 active
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                  ? 'bg-primary-container text-primary-on-container'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <Icon className={`h-[18px] w-[18px] ${active ? '' : 'opacity-70 group-hover:opacity-100'}`} />
+              <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.4 : 2} />
               {label}
             </Link>
           )
@@ -52,9 +52,9 @@ export default function Sidebar() {
       <div className="px-3 py-4">
         <button
           onClick={logout}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
+          className="state-layer flex h-14 w-full items-center gap-3 rounded-full px-4 text-sm font-medium text-muted-foreground transition-colors hover:text-danger"
         >
-          <LogOut className="h-[18px] w-[18px]" />
+          <LogOut className="h-[22px] w-[22px]" />
           Sign out
         </button>
       </div>

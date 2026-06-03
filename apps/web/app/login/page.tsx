@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Lock, Mail, AlertCircle } from 'lucide-react'
+import { Lock, Mail, AlertCircle } from 'lucide-react'
 import { login } from '@/lib/api'
 import { isAuthenticated } from '@/lib/auth'
+import Button from '@/components/ui/Button'
 import ThemeToggle from '@/components/theme/ThemeToggle'
 
 export default function LoginPage() {
@@ -34,8 +35,7 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-4">
-      {/* Ambient brand glow */}
-      <div className="pointer-events-none absolute -top-40 left-1/2 h-80 w-[40rem] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+      <div className="pointer-events-none absolute -top-40 left-1/2 h-80 w-[40rem] -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
 
       <div className="absolute right-4 top-4">
         <ThemeToggle />
@@ -44,37 +44,38 @@ export default function LoginPage() {
       <div className="relative w-full max-w-sm animate-fade-in">
         {/* Brand */}
         <div className="mb-8 flex flex-col items-center text-center">
-          <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-xl font-black text-primary-foreground shadow-pop">
+          <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-3xl bg-primary text-2xl font-bold text-primary-foreground shadow-e3">
             B
           </span>
-          <h1 className="text-lg font-semibold text-foreground">BCF Portal</h1>
+          <h1 className="text-xl font-medium text-foreground">BCF Portal</h1>
           <p className="text-sm text-muted-foreground">Opportunity Intelligence</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="card space-y-4 p-6 shadow-card">
+        <form onSubmit={handleSubmit} className="md-card space-y-5 p-6 shadow-e2">
           <div>
-            <h2 className="text-base font-semibold text-foreground">Welcome back</h2>
+            <h2 className="text-lg font-medium text-foreground">Welcome back</h2>
             <p className="text-sm text-muted-foreground">Sign in to access your dashboard</p>
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2.5 text-sm text-danger">
+            <div className="flex items-center gap-2 rounded-2xl bg-danger/12 px-4 py-3 text-sm text-danger">
               <AlertCircle className="h-4 w-4 flex-shrink-0" />
               {error}
             </div>
           )}
 
+          {/* MD3 filled text fields */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-foreground">Email</label>
             <div className="relative">
-              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Mail className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground" />
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="focus-ring w-full rounded-lg border border-input bg-background py-2.5 pl-9 pr-3 text-sm text-foreground placeholder-muted-foreground transition-colors focus:border-ring"
+                className="focus-ring w-full rounded-t-lg border-b-2 border-input bg-surface-container py-3 pl-11 pr-4 text-sm text-foreground placeholder-muted-foreground transition-colors focus:border-primary"
                 placeholder="you@example.com"
               />
             </div>
@@ -83,27 +84,22 @@ export default function LoginPage() {
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-foreground">Password</label>
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Lock className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground" />
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                className="focus-ring w-full rounded-lg border border-input bg-background py-2.5 pl-9 pr-3 text-sm text-foreground placeholder-muted-foreground transition-colors focus:border-ring"
+                className="focus-ring w-full rounded-t-lg border-b-2 border-input bg-surface-container py-3 pl-11 pr-4 text-sm text-foreground placeholder-muted-foreground transition-colors focus:border-primary"
                 placeholder="••••••••"
               />
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="focus-ring flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+          <Button type="submit" loading={loading} className="w-full">
             {loading ? 'Signing in…' : 'Sign in'}
-          </button>
+          </Button>
         </form>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">

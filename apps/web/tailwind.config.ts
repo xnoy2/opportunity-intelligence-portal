@@ -12,6 +12,11 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card) / <alpha-value>)',
           foreground: 'hsl(var(--card-foreground) / <alpha-value>)',
         },
+        surface: {
+          container: 'hsl(var(--surface-container) / <alpha-value>)',
+          'container-high': 'hsl(var(--surface-container-high) / <alpha-value>)',
+          'container-highest': 'hsl(var(--surface-container-highest) / <alpha-value>)',
+        },
         muted: {
           DEFAULT: 'hsl(var(--muted) / <alpha-value>)',
           foreground: 'hsl(var(--muted-foreground) / <alpha-value>)',
@@ -23,8 +28,11 @@ const config: Config = {
         primary: {
           DEFAULT: 'hsl(var(--primary) / <alpha-value>)',
           foreground: 'hsl(var(--primary-foreground) / <alpha-value>)',
+          container: 'hsl(var(--primary-container) / <alpha-value>)',
+          'on-container': 'hsl(var(--on-primary-container) / <alpha-value>)',
         },
         border: 'hsl(var(--border) / <alpha-value>)',
+        outline: 'hsl(var(--outline) / <alpha-value>)',
         input: 'hsl(var(--input) / <alpha-value>)',
         ring: 'hsl(var(--ring) / <alpha-value>)',
         success: 'hsl(var(--success) / <alpha-value>)',
@@ -34,28 +42,25 @@ const config: Config = {
         violet: 'hsl(var(--violet) / <alpha-value>)',
       },
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+        '2xl': '1rem',
+        '3xl': '1.75rem',
       },
-      fontFamily: { sans: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'] },
+      fontFamily: { sans: ['var(--font-roboto)', 'Roboto', 'system-ui', 'sans-serif'] },
       boxShadow: {
-        soft: '0 1px 2px 0 rgb(0 0 0 / 0.04), 0 1px 3px 0 rgb(0 0 0 / 0.06)',
-        card: '0 1px 3px 0 rgb(0 0 0 / 0.05), 0 4px 12px -2px rgb(0 0 0 / 0.06)',
-        pop: '0 4px 16px -2px rgb(0 0 0 / 0.10), 0 8px 32px -8px rgb(0 0 0 / 0.12)',
+        // Material 3 elevation levels
+        e1: '0 1px 2px 0 rgb(0 0 0 / 0.30), 0 1px 3px 1px rgb(0 0 0 / 0.15)',
+        e2: '0 1px 2px 0 rgb(0 0 0 / 0.30), 0 2px 6px 2px rgb(0 0 0 / 0.15)',
+        e3: '0 1px 3px 0 rgb(0 0 0 / 0.30), 0 4px 8px 3px rgb(0 0 0 / 0.15)',
+        e4: '0 2px 3px 0 rgb(0 0 0 / 0.30), 0 6px 10px 4px rgb(0 0 0 / 0.15)',
       },
       keyframes: {
         'fade-in': {
-          from: { opacity: '0', transform: 'translateY(4px)' },
+          from: { opacity: '0', transform: 'translateY(6px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
         },
-        shimmer: {
-          '100%': { transform: 'translateX(100%)' },
-        },
+        shimmer: { '100%': { transform: 'translateX(100%)' } },
       },
-      animation: {
-        'fade-in': 'fade-in 0.3s ease-out',
-      },
+      animation: { 'fade-in': 'fade-in 0.3s cubic-bezier(0.2, 0, 0, 1)' },
     },
   },
   plugins: [],
