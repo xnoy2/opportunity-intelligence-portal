@@ -1,9 +1,14 @@
 import { Worker } from 'bullmq'
 import { getConnection, makeQueue } from './queue.js'
 import { scrapeNI } from './scrapers/ni.js'
+import { scrapeROIEplanning } from './scrapers/roi-eplanning.js'
+import { scrapeROIPleanala } from './scrapers/roi-pleanala.js'
+import { scrapeEngland } from './scrapers/england.js'
+import { scrapeDaeraGrants } from './scrapers/grants-daera.js'
 import { classifyLead } from '../services/classifier.js'
 import { prisma } from '@bcf/db'
 import { pushToGHL } from '../services/ghl.js'
+import { geocodeLead } from '../services/geocoder.js'
 
 // ─── Scraper worker ───────────────────────────────────────────────────────────
 
@@ -16,7 +21,11 @@ new Worker('scrapers', async job => {
   try {
     let result = { found: 0, inserted: 0 }
 
-    if (source === 'ni') result = await scrapeNI()
+    if (source === 'ni')              result = await scrapeNI()
+    else if (source === 'roi')        result = await scrapeROIEplanning()
+    else if (source === 'pleanala')   result = await scrapeROIPleanala()
+    else if (source === 'england')    result = await scrapeEngland()
+    else if (source === 'daera')      result = await scrapeDaeraGrants()
     else console.log(`[worker] ${source} scraper not yet implemented`)
 
     await prisma.scrapeLog.create({
@@ -46,21 +55,25 @@ const classifierWorker = new Worker('classifier', async job => {
 
   const result = await classifyLead(lead.description, lead.location ?? undefined)
 
+  // Geocode the lead address for the map
+  const coords = await geocodeLead(lead.postcode, lead.location, lead.sourceRegion)
+
   await prisma.lead.update({
     where: { id: leadId },
     data: {
-      projectType: result.project_type,
+      projectType:    result.project_type,
       assignedCompany: result.assigned_company,
-      leadScore: result.lead_score,
+      leadScore:      result.lead_score,
       estimatedValue: result.estimated_value_gbp,
-      aiSummary: result.ai_summary,
+      aiSummary:      result.ai_summary,
       suggestedAction: result.suggested_action,
-      classifiedAt: new Date(),
+      classifiedAt:   new Date(),
+      ...(coords && { latitude: coords.lat, longitude: coords.lng }),
     },
   })
 
   if (result.lead_score >= 70) {
-    await pushToGHL({
+    const ghlContactId = await pushToGHL({
       leadId,
       planningRef: lead.planningRef,
       company: result.assigned_company,
@@ -68,6 +81,13 @@ const classifierWorker = new Worker('classifier', async job => {
       location: lead.location ?? '',
       summary: result.ai_summary,
     })
+    // Store GHL contact ID for future pipeline sync
+    if (ghlContactId) {
+      await prisma.lead.update({
+        where: { id: leadId },
+        data: { ghlContactId },
+      })
+    }
   }
 }, { connection: getConnection() as any, concurrency: 1 })
 

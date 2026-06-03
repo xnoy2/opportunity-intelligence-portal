@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Target, KanbanSquare, LogOut } from 'lucide-react'
+import { LayoutDashboard, Target, KanbanSquare, Map, LogOut } from 'lucide-react'
 import { logout } from '@/lib/auth'
 
 const nav = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/leads',     label: 'Leads',     icon: Target },
   { href: '/pipeline',  label: 'Pipeline',  icon: KanbanSquare },
+  { href: '/map',       label: 'Map',       icon: Map },
 ]
 
 export default function Sidebar() {

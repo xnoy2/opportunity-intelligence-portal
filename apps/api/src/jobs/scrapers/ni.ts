@@ -111,6 +111,9 @@ export async function scrapeNI(daysBack = 7): Promise<{ found: number; inserted:
   let inserted = 0
   const classifierQ = makeQueue('classifier')
 
+  // NI postcode regex: BT followed by 1-2 digits, space, digit, 2 letters
+  const postcodeRe = /\bBT\d{1,2}\s?\d[A-Z]{2}\b/i
+
   for (const app of allApplications) {
     const existing = await prisma.lead.findUnique({
       where: { planningRef: app.applicationReferenceNumber },
@@ -124,6 +127,7 @@ export async function scrapeNI(daysBack = 7): Promise<{ found: number; inserted:
         planningRef:        app.applicationReferenceNumber,
         description:        app.proposalText,
         location:           app.siteAddress.replace(/\r\n/g, ', ').replace(/\n/g, ', '),
+        postcode:           app.siteAddress.match(postcodeRe)?.[0]?.toUpperCase() || undefined,
         applicantName:      app.applicantName || undefined,
         dateSubmitted:      app.dateReceived ? new Date(app.dateReceived) : undefined,
         dateApproved:       app.decisionDate ? new Date(app.decisionDate) : undefined,

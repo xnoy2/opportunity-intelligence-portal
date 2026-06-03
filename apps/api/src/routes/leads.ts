@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { requireAuth, getCompanyFilter } from '../middleware/auth.js'
+import { syncStatusToGHL } from '../services/ghl.js'
 import type { Company, LeadStatus } from '@bcf/db'
 
 const querySchema = z.object({
@@ -16,11 +17,27 @@ const querySchema = z.object({
 })
 
 function categoryWhere(category: string | undefined) {
+  const icontains = (s: string) => ({ contains: s, mode: 'insensitive' as const })
   switch (category) {
     case 'approved':   return { dateApproved: { not: null } }
     case 'high_value': return { leadScore: { gte: 85 } }
-    case 'tourism':    return { projectType: { contains: 'tourism', mode: 'insensitive' as const } }
-    case 'commercial': return { projectType: { contains: 'commercial', mode: 'insensitive' as const } }
+    case 'tourism':    return { OR: [
+      { projectType: icontains('tourism') },
+      { projectType: icontains('glamping') },
+      { projectType: icontains('holiday') },
+      { projectType: icontains('short term let') },
+      { projectType: icontains('accommodation') },
+      { projectType: icontains('pod') },
+      { projectType: icontains('lodge') },
+      { projectType: icontains('bothy') },
+    ]}
+    case 'commercial': return { OR: [
+      { projectType: icontains('commercial') },
+      { projectType: icontains('office') },
+      { projectType: icontains('retail') },
+      { projectType: icontains('industrial') },
+      { projectType: icontains('mixed use') },
+    ]}
     default:           return {}
   }
 }
@@ -98,7 +115,14 @@ export const leadsRoutes: FastifyPluginAsync = async server => {
         _count: { id: true },
       }),
       server.prisma.lead.count({
-        where: { ...companyWhere, projectType: { contains: 'tourism', mode: 'insensitive' } },
+        where: { ...companyWhere, OR: [
+          { projectType: { contains: 'tourism',       mode: 'insensitive' } },
+          { projectType: { contains: 'glamping',      mode: 'insensitive' } },
+          { projectType: { contains: 'holiday',       mode: 'insensitive' } },
+          { projectType: { contains: 'short term let',mode: 'insensitive' } },
+          { projectType: { contains: 'accommodation', mode: 'insensitive' } },
+          { projectType: { contains: 'bothy',         mode: 'insensitive' } },
+        ]},
       }),
       server.prisma.lead.count({
         where: { ...companyWhere, projectType: { contains: 'farm', mode: 'insensitive' } },
@@ -131,6 +155,29 @@ export const leadsRoutes: FastifyPluginAsync = async server => {
       unactioned,
       lastScrape: lastScrape?.runAt ?? null,
     }
+  })
+
+  // GET /leads/map — geocoded leads for the interactive map
+  server.get('/map', async request => {
+    const companyFilter = getCompanyFilter(request)
+    const where = {
+      ...(companyFilter && { assignedCompany: companyFilter }),
+      latitude:  { not: null },
+      longitude: { not: null },
+    }
+    const leads = await server.prisma.lead.findMany({
+      where,
+      orderBy: { leadScore: 'desc' },
+      take: 500,
+      select: {
+        id: true, planningRef: true, projectType: true,
+        location: true, status: true, assignedCompany: true,
+        leadScore: true, estimatedValue: true,
+        latitude: true, longitude: true,
+        sourceRegion: true, dateSubmitted: true,
+      },
+    })
+    return leads
   })
 
   // GET /leads/:id — full detail
@@ -167,6 +214,13 @@ export const leadsRoutes: FastifyPluginAsync = async server => {
       where: { id },
       data: { status },
     })
+
+    // Sync pipeline stage to GHL if this lead has a GHL contact
+    if (lead.ghlContactId && lead.assignedCompany) {
+      syncStatusToGHL(lead.ghlContactId, lead.assignedCompany, status).catch(err =>
+        server.log.error('[ghl-sync] ' + err.message)
+      )
+    }
 
     return updated
   })

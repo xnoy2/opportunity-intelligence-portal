@@ -55,6 +55,9 @@ model Lead {
   sourceRegion       String?    @map("source_region")
   intelligenceSource String     @default("planning") @map("intelligence_source")
   classifiedAt       DateTime?  @map("classified_at")
+  ghlContactId       String?    @map("ghl_contact_id")
+  latitude           Float?
+  longitude          Float?
   createdAt          DateTime   @default(now()) @map("created_at")
   updatedAt          DateTime   @updatedAt @map("updated_at")
 

@@ -53,7 +53,14 @@ export default function DashboardPage() {
   async function handleScan() {
     setScanning(true)
     try {
-      await triggerScrape('ni')
+      // Trigger all active sources in parallel
+      await Promise.all([
+        triggerScrape('ni'),
+        triggerScrape('roi'),
+        triggerScrape('pleanala'),
+        triggerScrape('england'),
+        triggerScrape('daera'),
+      ])
       const s = await getStats()
       setStats(s)
     } catch (e) { console.error(e) }
