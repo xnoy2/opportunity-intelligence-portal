@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import Topbar from '@/components/ui/Topbar'
 import { SkeletonCard } from '@/components/ui/Skeleton'
-import ScoreBadge from '@/components/leads/ScoreBadge'
 import CompanyBadge from '@/components/leads/CompanyBadge'
 import { getStats, getLeads, triggerScrape } from '@/lib/api'
 import type { StatsResponse, Lead, LeadCategory } from '@/types'
@@ -130,7 +129,12 @@ export default function DashboardPage() {
   async function handleScan() {
     setScanning(true)
     try {
-      await triggerScrape('ni')
+      // Trigger all active sources in parallel
+      await Promise.all([
+        triggerScrape('ni'),
+        triggerScrape('roi'),
+        triggerScrape('pleanala'),
+      ])
       const s = await getStats()
       setStats(s)
     } catch (e) { console.error(e) }
