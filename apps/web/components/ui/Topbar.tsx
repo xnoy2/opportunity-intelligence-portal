@@ -2,27 +2,33 @@
 
 import { useEffect, useState } from 'react'
 import { getStoredUser } from '@/lib/auth'
+import ThemeToggle from '@/components/theme/ThemeToggle'
 import type { User } from '@/types'
 
-interface Props { title: string }
+interface Props { title: string; subtitle?: string }
 
-export default function Topbar({ title }: Props) {
+export default function Topbar({ title, subtitle }: Props) {
   const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => { setUser(getStoredUser()) }, [])
 
   return (
-    <header className="h-14 border-b border-navy-border bg-navy-card/80 backdrop-blur-sm flex items-center justify-between px-6 sticky top-0 z-10">
-      <h1 className="text-white font-semibold text-base">{title}</h1>
+    <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur-md">
+      <div>
+        <h1 className="text-[15px] font-semibold text-foreground">{title}</h1>
+        {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+      </div>
+
       <div className="flex items-center gap-3">
+        <ThemeToggle />
         {user && (
-          <div className="text-right">
-            <p className="text-white text-sm font-medium">{user.name ?? user.email}</p>
-            <p className="text-muted text-xs">{user.company} · {user.role}</p>
+          <div className="hidden text-right sm:block">
+            <p className="text-sm font-medium leading-tight text-foreground">{user.name ?? user.email}</p>
+            <p className="text-xs leading-tight text-muted-foreground">{user.company} · {user.role}</p>
           </div>
         )}
-        <div className="w-8 h-8 rounded-full bg-gold/20 border border-gold/40 flex items-center justify-center text-gold text-xs font-bold">
-          {user?.name?.[0] ?? user?.email?.[0]?.toUpperCase() ?? '?'}
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-sm font-semibold text-primary ring-1 ring-primary/25">
+          {user?.name?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? '?'}
         </div>
       </div>
     </header>

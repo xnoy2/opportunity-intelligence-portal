@@ -3,18 +3,18 @@
 import type { Company } from '@/types'
 
 const styles: Record<string, string> = {
-  BGR:      'bg-accent/15 text-accent border-accent/30',
-  BWDS:     'bg-purple-400/15 text-purple-400 border-purple-400/30',
-  BCF:      'bg-success/15 text-success border-success/30',
-  MULTIPLE: 'bg-gold/15 text-gold border-gold/30',
+  BGR:      'bg-info/12 text-info ring-info/25',
+  BWDS:     'bg-violet/12 text-violet ring-violet/25',
+  BCF:      'bg-success/12 text-success ring-success/25',
+  MULTIPLE: 'bg-primary/12 text-primary ring-primary/25',
 }
 
 interface Props { company: Company | null }
 
 export default function CompanyBadge({ company }: Props) {
-  if (!company) return <span className="text-muted text-xs">—</span>
+  if (!company) return <span className="text-muted-foreground text-xs">—</span>
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${styles[company] ?? 'bg-white/5 text-muted border-white/10'}`}>
+    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ring-1 ${styles[company] ?? 'bg-muted text-muted-foreground ring-border'}`}>
       {company}
     </span>
   )
