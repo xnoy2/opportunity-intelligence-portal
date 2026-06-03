@@ -1,30 +1,31 @@
 'use client'
 
+// Priority tiers — how a sales team actually triages leads.
+// Ranges (not just minimums) so each tier is a distinct band.
+export const SCORE_TIERS = {
+  all:  { label: 'All scores',       min: 0,  max: 100 },
+  hot:  { label: '🔥 Hot · 80–100',  min: 80, max: 100 },
+  warm: { label: 'Warm · 50–79',     min: 50, max: 79  },
+  cold: { label: 'Cold · below 50',  min: 0,  max: 49  },
+} as const
+
+export type ScoreTier = keyof typeof SCORE_TIERS
+
 interface Props {
-  value: number
-  onChange: (v: number) => void
+  value: ScoreTier
+  onChange: (tier: ScoreTier) => void
   className?: string
 }
-
-// Granular score bands covering the full active range (many real leads score 8–42)
-const OPTIONS: { value: number; label: string }[] = [
-  { value: 0,  label: 'Any score' },
-  { value: 85, label: 'Score 85+' },
-  { value: 70, label: 'Score 70+' },
-  { value: 50, label: 'Score 50+' },
-  { value: 30, label: 'Score 30+' },
-  { value: 10, label: 'Score 10+' },
-]
 
 export default function ScoreFilter({ value, onChange, className = '' }: Props) {
   return (
     <select
       value={value}
-      onChange={e => onChange(Number(e.target.value))}
+      onChange={e => onChange(e.target.value as ScoreTier)}
       className={`focus-ring h-8 rounded-lg border border-input bg-surface-container px-3 text-xs text-foreground focus:border-ring ${className}`}
     >
-      {OPTIONS.map(o => (
-        <option key={o.value} value={o.value}>{o.label}</option>
+      {(Object.keys(SCORE_TIERS) as ScoreTier[]).map(key => (
+        <option key={key} value={key}>{SCORE_TIERS[key].label}</option>
       ))}
     </select>
   )

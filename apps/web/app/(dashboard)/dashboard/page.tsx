@@ -8,7 +8,7 @@ import Button from '@/components/ui/Button'
 import StatCard from '@/components/ui/StatCard'
 import { SkeletonCard, SkeletonLeadRow } from '@/components/ui/Skeleton'
 import LeadRow from '@/components/leads/LeadRow'
-import ScoreFilter from '@/components/ui/ScoreFilter'
+import ScoreFilter, { SCORE_TIERS, type ScoreTier } from '@/components/ui/ScoreFilter'
 import { getStats, getLeads, triggerScrape } from '@/lib/api'
 import { fmtPipeline, fmtLastScan } from '@/lib/format'
 import type { StatsResponse, Lead, LeadCategory } from '@/types'
@@ -28,14 +28,17 @@ export default function DashboardPage() {
   const [leadsLoading, setLeadsLoading] = useState(false)
   const [scanning, setScanning] = useState(false)
   const [tab, setTab]           = useState<LeadCategory>('all')
-  const [minScore, setMinScore] = useState(0)
+  const [scoreTier, setScoreTier] = useState<ScoreTier>('all')
 
-  const loadLeads = useCallback(async (category: LeadCategory, score: number) => {
+  const loadLeads = useCallback(async (category: LeadCategory, tier: ScoreTier) => {
     setLeadsLoading(true)
     try {
       const filters: Record<string, unknown> = { limit: 20 }
       if (category !== 'all') filters.category = category
-      if (score > 0) filters.minScore = score
+      if (tier !== 'all') {
+        filters.minScore = SCORE_TIERS[tier].min
+        filters.maxScore = SCORE_TIERS[tier].max
+      }
       const res = await getLeads(filters)
       setLeads(res.leads)
     } finally {
@@ -51,8 +54,8 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => {
-    if (!loading) loadLeads(tab, minScore).catch(console.error)
-  }, [tab, minScore, loading, loadLeads])
+    if (!loading) loadLeads(tab, scoreTier).catch(console.error)
+  }, [tab, scoreTier, loading, loadLeads])
 
   async function handleScan() {
     setScanning(true)
@@ -132,7 +135,7 @@ export default function DashboardPage() {
             ))}
 
             <div className="ml-auto flex items-center gap-3">
-              <ScoreFilter value={minScore} onChange={setMinScore} />
+              <ScoreFilter value={scoreTier} onChange={setScoreTier} />
               <Link
                 href="/leads"
                 className="inline-flex items-center gap-1 whitespace-nowrap pr-1 text-sm font-medium text-primary"

@@ -57,6 +57,7 @@ export interface LeadFilters {
   status?: string
   company?: string
   minScore?: number
+  maxScore?: number
   region?: string
   category?: string
   unactioned?: boolean

@@ -8,6 +8,7 @@ const querySchema = z.object({
   status:     z.string().optional(),
   company:    z.string().optional(),
   minScore:   z.coerce.number().optional(),
+  maxScore:   z.coerce.number().optional(),
   region:     z.string().optional(),
   since:      z.string().datetime().optional(),
   category:   z.enum(['approved', 'high_value', 'tourism', 'commercial']).optional(),
@@ -54,7 +55,12 @@ export const leadsRoutes: FastifyPluginAsync = async server => {
       ...(companyFilter && { assignedCompany: companyFilter }),
       ...(q.company && !companyFilter && { assignedCompany: q.company as Company }),
       ...(q.status && { status: q.status as LeadStatus }),
-      ...(q.minScore !== undefined && { leadScore: { gte: q.minScore } }),
+      ...((q.minScore !== undefined || q.maxScore !== undefined) && {
+        leadScore: {
+          ...(q.minScore !== undefined && { gte: q.minScore }),
+          ...(q.maxScore !== undefined && { lte: q.maxScore }),
+        },
+      }),
       ...(q.region && { sourceRegion: q.region }),
       ...(q.since && { createdAt: { gte: new Date(q.since) } }),
       ...categoryWhere(q.category),

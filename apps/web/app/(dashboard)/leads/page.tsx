@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Target } from 'lucide-react'
 import Topbar from '@/components/ui/Topbar'
 import { SkeletonLeadRow } from '@/components/ui/Skeleton'
 import LeadRow from '@/components/leads/LeadRow'
-import ScoreFilter from '@/components/ui/ScoreFilter'
+import ScoreFilter, { SCORE_TIERS, type ScoreTier } from '@/components/ui/ScoreFilter'
 import { getLeads } from '@/lib/api'
 import type { Lead, LeadCategory } from '@/types'
 
@@ -25,7 +25,7 @@ export default function LeadsPage() {
   const [loading, setLoading]       = useState(true)
   const [tab, setTab]               = useState<LeadCategory>('all')
   const [showActioned, setShowActioned] = useState(false)
-  const [minScore, setMinScore]     = useState(0)
+  const [scoreTier, setScoreTier]   = useState<ScoreTier>('all')
   const [offset, setOffset]         = useState(0)
   const LIMIT = 50
 
@@ -35,14 +35,17 @@ export default function LeadsPage() {
       const filters: Record<string, unknown> = { limit: LIMIT, offset: off }
       if (tab !== 'all') filters.category = tab
       if (!showActioned) filters.unactioned = true
-      if (minScore > 0) filters.minScore = minScore
+      if (scoreTier !== 'all') {
+        filters.minScore = SCORE_TIERS[scoreTier].min
+        filters.maxScore = SCORE_TIERS[scoreTier].max
+      }
       const res = await getLeads(filters)
       setLeads(res.leads)
       setTotal(res.total)
       setOffset(off)
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
-  }, [tab, showActioned, minScore])
+  }, [tab, showActioned, scoreTier])
 
   useEffect(() => { load(0) }, [load])
 
@@ -71,7 +74,7 @@ export default function LeadsPage() {
           ))}
 
           <div className="ml-auto flex items-center gap-3">
-          <ScoreFilter value={minScore} onChange={setMinScore} />
+          <ScoreFilter value={scoreTier} onChange={setScoreTier} />
           <label className="flex cursor-pointer items-center gap-2 whitespace-nowrap">
             <span className="text-xs text-muted-foreground">Show actioned</span>
             <button

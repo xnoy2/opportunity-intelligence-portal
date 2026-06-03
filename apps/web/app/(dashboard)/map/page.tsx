@@ -6,7 +6,7 @@ import { X } from 'lucide-react'
 import Topbar from '@/components/ui/Topbar'
 import CompanyBadge from '@/components/leads/CompanyBadge'
 import ScoreBadge from '@/components/leads/ScoreBadge'
-import ScoreFilter from '@/components/ui/ScoreFilter'
+import ScoreFilter, { SCORE_TIERS, type ScoreTier } from '@/components/ui/ScoreFilter'
 import { getMapLeads } from '@/lib/api'
 import { fmtValueRange } from '@/lib/format'
 import type { MapLead } from '@/types'
@@ -33,7 +33,7 @@ export default function MapPage() {
   const [leads, setLeads]       = useState<MapLead[]>([])
   const [loading, setLoading]   = useState(true)
   const [company, setCompany]   = useState('all')
-  const [minScore, setMinScore] = useState(0)
+  const [scoreTier, setScoreTier] = useState<ScoreTier>('all')
   const [selected, setSelected] = useState<MapLead | null>(null)
 
   useEffect(() => {
@@ -43,9 +43,10 @@ export default function MapPage() {
       .finally(() => setLoading(false))
   }, [])
 
+  const { min, max } = SCORE_TIERS[scoreTier]
   const filtered = leads.filter(l => {
     if (company !== 'all' && l.assignedCompany !== company) return false
-    if (l.leadScore < minScore) return false
+    if (l.leadScore < min || l.leadScore > max) return false
     return true
   })
 
@@ -72,7 +73,7 @@ export default function MapPage() {
           ))}
         </div>
 
-        <ScoreFilter value={minScore} onChange={setMinScore} />
+        <ScoreFilter value={scoreTier} onChange={setScoreTier} />
 
         <span className="ml-auto text-xs text-muted-foreground">
           {loading ? 'Loading…' : `${filtered.length} plotted`}
