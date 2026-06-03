@@ -6,6 +6,7 @@ import { X } from 'lucide-react'
 import Topbar from '@/components/ui/Topbar'
 import CompanyBadge from '@/components/leads/CompanyBadge'
 import ScoreBadge from '@/components/leads/ScoreBadge'
+import ScoreFilter from '@/components/ui/ScoreFilter'
 import { getMapLeads } from '@/lib/api'
 import { fmtValueRange } from '@/lib/format'
 import type { MapLead } from '@/types'
@@ -71,15 +72,7 @@ export default function MapPage() {
           ))}
         </div>
 
-        <select
-          value={minScore}
-          onChange={e => setMinScore(Number(e.target.value))}
-          className="focus-ring h-8 rounded-lg border border-input bg-surface-container px-3 text-xs text-foreground focus:border-ring"
-        >
-          <option value={0}>Any score</option>
-          <option value={70}>Score 70+</option>
-          <option value={85}>Score 85+</option>
-        </select>
+        <ScoreFilter value={minScore} onChange={setMinScore} />
 
         <span className="ml-auto text-xs text-muted-foreground">
           {loading ? 'Loading…' : `${filtered.length} plotted`}

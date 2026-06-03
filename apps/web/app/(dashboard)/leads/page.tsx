@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Target } from 'lucide-react'
 import Topbar from '@/components/ui/Topbar'
 import { SkeletonLeadRow } from '@/components/ui/Skeleton'
 import LeadRow from '@/components/leads/LeadRow'
+import ScoreFilter from '@/components/ui/ScoreFilter'
 import { getLeads } from '@/lib/api'
 import type { Lead, LeadCategory } from '@/types'
 
@@ -24,6 +25,7 @@ export default function LeadsPage() {
   const [loading, setLoading]       = useState(true)
   const [tab, setTab]               = useState<LeadCategory>('all')
   const [showActioned, setShowActioned] = useState(false)
+  const [minScore, setMinScore]     = useState(0)
   const [offset, setOffset]         = useState(0)
   const LIMIT = 50
 
@@ -33,13 +35,14 @@ export default function LeadsPage() {
       const filters: Record<string, unknown> = { limit: LIMIT, offset: off }
       if (tab !== 'all') filters.category = tab
       if (!showActioned) filters.unactioned = true
+      if (minScore > 0) filters.minScore = minScore
       const res = await getLeads(filters)
       setLeads(res.leads)
       setTotal(res.total)
       setOffset(off)
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
-  }, [tab, showActioned])
+  }, [tab, showActioned, minScore])
 
   useEffect(() => { load(0) }, [load])
 
@@ -67,7 +70,9 @@ export default function LeadsPage() {
             </button>
           ))}
 
-          <label className="ml-auto flex cursor-pointer items-center gap-2 whitespace-nowrap">
+          <div className="ml-auto flex items-center gap-3">
+          <ScoreFilter value={minScore} onChange={setMinScore} />
+          <label className="flex cursor-pointer items-center gap-2 whitespace-nowrap">
             <span className="text-xs text-muted-foreground">Show actioned</span>
             <button
               type="button"
@@ -83,6 +88,7 @@ export default function LeadsPage() {
               }`} />
             </button>
           </label>
+          </div>
         </div>
 
         <div className="md-card overflow-hidden">

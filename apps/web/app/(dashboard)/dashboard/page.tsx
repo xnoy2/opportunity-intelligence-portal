@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button'
 import StatCard from '@/components/ui/StatCard'
 import { SkeletonCard, SkeletonLeadRow } from '@/components/ui/Skeleton'
 import LeadRow from '@/components/leads/LeadRow'
+import ScoreFilter from '@/components/ui/ScoreFilter'
 import { getStats, getLeads, triggerScrape } from '@/lib/api'
 import { fmtPipeline, fmtLastScan } from '@/lib/format'
 import type { StatsResponse, Lead, LeadCategory } from '@/types'
@@ -27,12 +28,15 @@ export default function DashboardPage() {
   const [leadsLoading, setLeadsLoading] = useState(false)
   const [scanning, setScanning] = useState(false)
   const [tab, setTab]           = useState<LeadCategory>('all')
+  const [minScore, setMinScore] = useState(0)
 
-  const loadLeads = useCallback(async (category: LeadCategory) => {
+  const loadLeads = useCallback(async (category: LeadCategory, score: number) => {
     setLeadsLoading(true)
     try {
-      const filters = category === 'all' ? {} : { category }
-      const res = await getLeads({ limit: 20, ...filters })
+      const filters: Record<string, unknown> = { limit: 20 }
+      if (category !== 'all') filters.category = category
+      if (score > 0) filters.minScore = score
+      const res = await getLeads(filters)
       setLeads(res.leads)
     } finally {
       setLeadsLoading(false)
@@ -47,8 +51,8 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => {
-    if (!loading) loadLeads(tab).catch(console.error)
-  }, [tab, loading, loadLeads])
+    if (!loading) loadLeads(tab, minScore).catch(console.error)
+  }, [tab, minScore, loading, loadLeads])
 
   async function handleScan() {
     setScanning(true)
@@ -127,12 +131,15 @@ export default function DashboardPage() {
               </button>
             ))}
 
-            <Link
-              href="/leads"
-              className="ml-auto inline-flex items-center gap-1 whitespace-nowrap pr-1 text-sm font-medium text-primary"
-            >
-              View all <ArrowRight className="h-4 w-4" />
-            </Link>
+            <div className="ml-auto flex items-center gap-3">
+              <ScoreFilter value={minScore} onChange={setMinScore} />
+              <Link
+                href="/leads"
+                className="inline-flex items-center gap-1 whitespace-nowrap pr-1 text-sm font-medium text-primary"
+              >
+                View all <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
 
           {/* Rows */}
