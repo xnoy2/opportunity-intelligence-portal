@@ -33,7 +33,18 @@ Apply these score modifiers:
 +5 if application is approved
 +5 if postcode is within ~30 miles of Ballycastle (BT54 area, north Antrim coast)
 
-High-value categories: holiday pods/glamping (£15k-£80k+), farm diversification, tourism accommodation. Flag these as CRITICAL.`
+High-value categories: holiday pods/glamping (£15k-£80k+), farm diversification, tourism accommodation. Flag these as CRITICAL.
+
+OUTPUT FORMAT — respond with a single JSON object and nothing else. Use exactly these keys:
+{
+  "project_type": string,            // short description of the project, e.g. "Garden room", "Window replacement", "GAA sports facility"
+  "assigned_company": string,        // one of: "BGR", "BWDS", "BCF", "MULTIPLE" (use MULTIPLE only when genuinely cross-company; pick the single best fit otherwise)
+  "lead_score": number,              // integer 0-100 using the weighting above
+  "estimated_value_gbp": number,     // integer best-estimate project value in GBP, 0 if truly unknown
+  "ai_summary": string,              // 1-2 sentence summary of the opportunity for the sales team
+  "suggested_action": string         // concrete next step, e.g. "Call applicant to discuss garden room options"
+}
+Do not include any other keys, commentary, or markdown.`
 
 export async function classifyLead(
   description: string,
@@ -51,14 +62,16 @@ export async function classifyLead(
     messages: [
       {
         role: 'user',
-        content: `Analyse this planning application. Return JSON only, no markdown, no backticks:\n\n${content}`,
+        content: `Analyse this planning application and return the JSON object described above:\n\n${content}`,
       },
+      // Prefill the assistant turn with an opening brace to force a JSON-only response.
+      { role: 'assistant', content: '{' },
     ],
   })
 
-  const text = message.content[0].type === 'text' ? message.content[0].text.trim() : ''
-
-  // Strip markdown code fences if model adds them despite instructions
+  const body = message.content[0].type === 'text' ? message.content[0].text : ''
+  // Re-attach the prefilled "{", then strip any stray markdown fences.
+  const text = `{${body}`.trim()
   const clean = text.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim()
 
   let raw: Record<string, unknown>
@@ -80,8 +93,8 @@ export async function classifyLead(
     assigned_company:   (raw.assigned_company ?? raw.assignedCompany ?? raw.company ?? 'MULTIPLE') as ClassificationResult['assigned_company'],
     lead_score:         isNaN(score) ? 50 : Math.max(0, Math.min(100, Math.round(score))),
     estimated_value_gbp: Number(raw.estimated_value_gbp ?? raw.estimatedValue ?? raw.value ?? 0),
-    ai_summary:         String(raw.ai_summary ?? raw.aiSummary ?? raw.summary ?? ''),
-    suggested_action:   String(raw.suggested_action ?? raw.suggestedAction ?? raw.action ?? ''),
+    ai_summary:         String(raw.ai_summary ?? raw.aiSummary ?? raw.summary ?? raw.application_summary ?? ''),
+    suggested_action:   String(raw.suggested_action ?? raw.suggestedAction ?? raw.action ?? raw.next_step ?? ''),
   }
 
   return result
