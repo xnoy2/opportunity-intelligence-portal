@@ -6,6 +6,7 @@ import Topbar from '@/components/ui/Topbar'
 import { SkeletonLeadRow } from '@/components/ui/Skeleton'
 import LeadRow from '@/components/leads/LeadRow'
 import ScoreFilter, { SCORE_TIERS, type ScoreTier } from '@/components/ui/ScoreFilter'
+import CompanyFilter from '@/components/ui/CompanyFilter'
 import ClassificationMonitor from '@/components/ui/ClassificationMonitor'
 import { getLeads, classifyLeads } from '@/lib/api'
 import { getStoredUser } from '@/lib/auth'
@@ -28,6 +29,7 @@ export default function LeadsPage() {
   const [tab, setTab]               = useState<LeadCategory>('all')
   const [showActioned, setShowActioned] = useState(false)
   const [scoreTier, setScoreTier]   = useState<ScoreTier>('all')
+  const [company, setCompany]       = useState('')
   const [offset, setOffset]         = useState(0)
   const LIMIT = 50
 
@@ -44,6 +46,7 @@ export default function LeadsPage() {
       const filters: Record<string, unknown> = { limit: LIMIT, offset: off }
       if (tab !== 'all') filters.category = tab
       if (!showActioned) filters.unactioned = true
+      if (company) filters.company = company
       if (scoreTier !== 'all') {
         filters.minScore = SCORE_TIERS[scoreTier].min
         filters.maxScore = SCORE_TIERS[scoreTier].max
@@ -54,7 +57,7 @@ export default function LeadsPage() {
       setOffset(off)
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
-  }, [tab, showActioned, scoreTier])
+  }, [tab, showActioned, scoreTier, company])
 
   useEffect(() => { load(0) }, [load])
 
@@ -120,6 +123,7 @@ export default function LeadsPage() {
           ))}
 
           <div className="ml-auto flex items-center gap-3">
+            <CompanyFilter value={company} onChange={setCompany} />
             <ScoreFilter value={scoreTier} onChange={setScoreTier} />
             <label className="flex cursor-pointer items-center gap-2 whitespace-nowrap">
               <span className="text-xs text-muted-foreground">Show actioned</span>
