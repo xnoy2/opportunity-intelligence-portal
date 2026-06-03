@@ -10,7 +10,7 @@
 
 import * as cheerio from 'cheerio'
 import { prisma } from '@bcf/db'
-import { makeQueue } from '../queue.js'
+import { makeQueue, addClassifyJob } from '../queue.js'
 
 const BASE = 'https://www.eplanning.ie'
 const RATE_MS = 2000
@@ -224,7 +224,7 @@ async function scrapeCouncil(
       },
     })
 
-    await classifierQ.add('classify', { leadId: lead.id })
+    await addClassifyJob(classifierQ, lead.id)
     inserted++
     await sleep(300)
   }

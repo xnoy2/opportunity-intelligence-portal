@@ -60,6 +60,56 @@ export const pipelineRoutes: FastifyPluginAsync = async server => {
     return { queued: unclassified.length }
   })
 
+  // ─── Manual AI classification controls (admin only) ───────────────────────
+  const classifySchema = z.object({ leadIds: z.array(z.string()).min(1).max(2000) })
+
+  // POST /pipeline/classify — classify a chosen set of leads
+  server.post('/classify', async (request, reply) => {
+    if (request.user.role !== 'ADMIN') return reply.status(403).send({ error: 'Admin only' })
+    const body = classifySchema.safeParse(request.body)
+    if (!body.success) return reply.status(400).send({ error: 'Provide leadIds[] (1–2000)' })
+
+    const q = makeQueue('classifier')
+    await q.resume() // ensure the worker will process the jobs we add
+    await q.addBulk(body.data.leadIds.map(id => ({ name: 'classify', data: { leadId: id } })))
+    console.log(`[pipeline] Manually queued ${body.data.leadIds.length} leads for classification`)
+    return { queued: body.data.leadIds.length }
+  })
+
+  // GET /pipeline/classify/status — live job state for the monitor
+  server.get('/classify/status', async (request, reply) => {
+    if (request.user.role !== 'ADMIN') return reply.status(403).send({ error: 'Admin only' })
+    const q = makeQueue('classifier')
+    const counts = await q.getJobCounts('active', 'waiting', 'delayed', 'completed', 'failed')
+    const paused = await q.isPaused()
+    const unclassified = await server.prisma.lead.count({ where: { classifiedAt: null } })
+    return {
+      active:    counts.active ?? 0,
+      waiting:   (counts.waiting ?? 0) + (counts.delayed ?? 0),
+      completed: counts.completed ?? 0,
+      failed:    counts.failed ?? 0,
+      paused,
+      unclassified,
+    }
+  })
+
+  // POST /pipeline/classify/stop — halt classification (pause + clear pending jobs)
+  server.post('/classify/stop', async (request, reply) => {
+    if (request.user.role !== 'ADMIN') return reply.status(403).send({ error: 'Admin only' })
+    const q = makeQueue('classifier')
+    await q.pause()
+    await q.drain(true)
+    console.log('[pipeline] Classification STOPPED (queue paused + drained)')
+    return { stopped: true }
+  })
+
+  // POST /pipeline/classify/resume — allow classification again
+  server.post('/classify/resume', async (request, reply) => {
+    if (request.user.role !== 'ADMIN') return reply.status(403).send({ error: 'Admin only' })
+    await makeQueue('classifier').resume()
+    return { resumed: true }
+  })
+
   // GET /pipeline/digest/preview — preview digest HTML (admin only)
   server.get('/digest/preview', async (request, reply) => {
     if (request.user.role !== 'ADMIN') return reply.status(403).send({ error: 'Admin only' })

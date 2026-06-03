@@ -27,3 +27,16 @@ export function makeQueue(name: string) {
     },
   })
 }
+
+/**
+ * Enqueue a lead for AI classification — ONLY when AUTO_CLASSIFY is enabled.
+ *
+ * Classification is manual by default (triggered from the dashboard) to cap
+ * Anthropic API spend: scrapers add leads to the DB but do not auto-classify.
+ * Set AUTO_CLASSIFY=true to restore scrape-time auto-classification.
+ */
+export async function addClassifyJob(queue: Queue, leadId: string): Promise<void> {
+  if (process.env.AUTO_CLASSIFY === 'true') {
+    await queue.add('classify', { leadId })
+  }
+}

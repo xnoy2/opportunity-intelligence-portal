@@ -9,7 +9,7 @@
  */
 
 import { prisma } from '@bcf/db'
-import { makeQueue } from '../queue.js'
+import { makeQueue, addClassifyJob } from '../queue.js'
 
 const BASE = 'https://www.planning.data.gov.uk/entity.json'
 const PAGE_SIZE = 100
@@ -107,7 +107,7 @@ export async function scrapeEngland(daysBack = 14): Promise<{ found: number; ins
         },
       })
 
-      await classifierQ.add('classify', { leadId: lead.id })
+      await addClassifyJob(classifierQ, lead.id)
       inserted++
     }
 

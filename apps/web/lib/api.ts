@@ -110,3 +110,30 @@ export async function triggerReclassify(): Promise<{ queued: number }> {
 export async function getMapLeads(): Promise<import('@/types').MapLead[]> {
   return request('/leads/map')
 }
+
+// ─── AI classification controls ─────────────────────────────────────────────
+
+export interface ClassifyStatus {
+  active: number
+  waiting: number
+  completed: number
+  failed: number
+  paused: boolean
+  unclassified: number
+}
+
+export async function getClassifyStatus(): Promise<ClassifyStatus> {
+  return request<ClassifyStatus>('/pipeline/classify/status')
+}
+
+export async function classifyLeads(leadIds: string[]): Promise<{ queued: number }> {
+  return request('/pipeline/classify', { method: 'POST', body: JSON.stringify({ leadIds }) })
+}
+
+export async function stopClassify(): Promise<{ stopped: boolean }> {
+  return request('/pipeline/classify/stop', { method: 'POST', body: '{}' })
+}
+
+export async function resumeClassify(): Promise<{ resumed: boolean }> {
+  return request('/pipeline/classify/resume', { method: 'POST', body: '{}' })
+}
