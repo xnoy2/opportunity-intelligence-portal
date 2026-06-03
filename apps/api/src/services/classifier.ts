@@ -51,7 +51,7 @@ export async function classifyLead(
     messages: [
       {
         role: 'user',
-        content: `Analyse this planning application. Return JSON only, no markdown, no backticks:\n\n${content}`,
+        content: `Analyse this planning application. Return JSON only — no markdown, no backticks, no extra text. Use exactly these fields:\n{"project_type": string, "assigned_company": "BGR"|"BWDS"|"BCF"|"MULTIPLE", "lead_score": number 0-100, "estimated_value_gbp": number, "ai_summary": "2 sentences max", "suggested_action": string}\n\n${content}`,
       },
     ],
   })
