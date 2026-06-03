@@ -1,6 +1,7 @@
 'use client'
 
 import type { LucideIcon } from 'lucide-react'
+import { useCountUp } from '@/lib/useCountUp'
 
 type Tone = 'primary' | 'warning' | 'success' | 'info' | 'neutral'
 
@@ -14,13 +15,19 @@ const toneStyles: Record<Tone, { icon: string; value: string }> = {
 
 interface Props {
   label: string
-  value: string | number
+  /** Numeric target — the card counts up to this value. */
+  value: number
   icon: LucideIcon
   tone?: Tone
+  /** Optional formatter applied to the (animated) number, e.g. £k formatting. */
+  format?: (n: number) => string
 }
 
-export default function StatCard({ label, value, icon: Icon, tone = 'neutral' }: Props) {
+export default function StatCard({ label, value, icon: Icon, tone = 'neutral', format }: Props) {
   const s = toneStyles[tone]
+  const animated = useCountUp(value)
+  const display = format ? format(Math.round(animated)) : Math.round(animated).toLocaleString('en-GB')
+
   return (
     <div className="md-card p-5 transition-shadow hover:shadow-e2">
       <div className="flex items-center justify-between">
@@ -29,7 +36,7 @@ export default function StatCard({ label, value, icon: Icon, tone = 'neutral' }:
           <Icon className="h-[18px] w-[18px]" />
         </span>
       </div>
-      <p className={`mt-4 text-3xl font-normal tabular-nums ${s.value}`}>{value}</p>
+      <p className={`mt-4 text-3xl font-normal tabular-nums ${s.value}`}>{display}</p>
     </div>
   )
 }

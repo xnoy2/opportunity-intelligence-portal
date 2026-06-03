@@ -90,11 +90,11 @@ export default function DashboardPage() {
             Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)
           ) : stats ? (
             <>
-              <StatCard label="New Today"     value={stats.newToday}                   icon={Sparkles} tone="primary" />
-              <StatCard label="Unactioned"    value={stats.unactioned}                 icon={Inbox}    tone="warning" />
-              <StatCard label="High Priority" value={stats.highValue}                  icon={Flame}    tone="primary" />
-              <StatCard label="Total Leads"   value={stats.activePipeline}             icon={Target}   tone="info" />
-              <StatCard label="Est. Pipeline" value={fmtPipeline(stats.pipelineValue)} icon={Wallet}   tone="success" />
+              <StatCard label="New Today"     value={stats.newToday}      icon={Sparkles} tone="primary" />
+              <StatCard label="Unactioned"    value={stats.unactioned}    icon={Inbox}    tone="warning" />
+              <StatCard label="High Priority" value={stats.highValue}     icon={Flame}    tone="primary" />
+              <StatCard label="Total Leads"   value={stats.activePipeline} icon={Target}  tone="info" />
+              <StatCard label="Est. Pipeline" value={stats.pipelineValue} icon={Wallet}   tone="success" format={fmtPipeline} />
             </>
           ) : null}
         </div>
