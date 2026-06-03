@@ -152,7 +152,10 @@ export async function sendWeeklyDigest(): Promise<void> {
 
   const resend = new Resend(apiKey)
   const { error } = await resend.emails.send({
-    from:    'BCF Portal <digest@bcfportal.co.uk>',
+    // onboarding@resend.dev works without domain verification.
+    // To send from digest@bcfportal.co.uk, verify that domain in Resend
+    // and set DIGEST_FROM env var.
+    from:    process.env.DIGEST_FROM || 'BCF Portal <onboarding@resend.dev>',
     to,
     subject: `BCF Weekly Intelligence Report — ${leads.length} new leads, ${fmtValue(stats.pipeline)} pipeline`,
     html,
