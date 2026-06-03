@@ -25,22 +25,29 @@ export default function LeafletMap({ leads, onSelect }: Props) {
   const mapRef       = useRef<import('leaflet').Map | null>(null)
   const markersRef   = useRef<import('leaflet').CircleMarker[]>([])
 
-  // Keep the latest onSelect without re-running effects
-  useEffect(() => { onSelectRef.current = onSelect }, [onSelect])
-
-  // ─── Initialise the map ONCE ──────────────────────────────────────────────
   useEffect(() => {
-    if (!containerRef.current || mapRef.current) return
-
-    let cancelled = false
+    if (!containerRef.current) return
 
     let resizeObs: ResizeObserver | undefined
 
     const init = async () => {
       const L = (await import('leaflet')).default
-      if (cancelled || !containerRef.current) return
 
-      const map = L.map(containerRef.current, {
+      // Fix Leaflet default icon paths broken by webpack
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (L.Icon.Default.prototype as any)._getIconUrl
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      })
+
+      if (mapRef.current) {
+        mapRef.current.remove()
+        mapRef.current = null
+      }
+
+      const map = L.map(containerRef.current!, {
         center: [54.7, -6.7],   // centred on NI
         zoom:   8,
         zoomControl: true,
@@ -56,9 +63,7 @@ export default function LeafletMap({ leads, onSelect }: Props) {
         maxZoom: 19,
       }).addTo(map)
 
-      // Layer group holds the markers — we clear/repopulate this on filter change
-      layerRef.current = L.layerGroup().addTo(map)
-      mapRef.current   = map
+      mapRef.current = map
 
       // Plot markers
       markersRef.current = leads.map(lead => {
@@ -111,49 +116,10 @@ export default function LeafletMap({ leads, onSelect }: Props) {
       markersRef.current = []
       mapRef.current?.remove()
       mapRef.current = null
-      layerRef.current = null
     }
   // Re-render when leads or theme change
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leads, theme])
-
-  // ─── Marker rendering helper ──────────────────────────────────────────────
-  function renderMarkers(L: typeof import('leaflet'), map: import('leaflet').Map) {
-    const layer = layerRef.current
-    if (!layer) return
-
-    layer.clearLayers()
-
-    const markers = leads.map(lead => {
-      const colour = PIN_COLOURS[lead.assignedCompany ?? ''] ?? DEFAULT_PIN
-      const radius = 5 + Math.round((lead.leadScore / 100) * 11)
-
-      const marker = L.circleMarker([lead.latitude, lead.longitude], {
-        radius,
-        color:       colour,
-        fillColor:   colour,
-        fillOpacity: 0.85,
-        weight:      1.5,
-        opacity:     1,
-      })
-
-      marker.bindTooltip(
-        `<b>${lead.planningRef}</b><br>${lead.location ?? ''}<br>Score: ${lead.leadScore}`,
-        { sticky: true, className: 'leaflet-dark-tooltip' }
-      )
-      marker.on('click', () => onSelectRef.current(lead))
-      layer.addLayer(marker)
-      return marker
-    })
-
-    // Recalculate size first (handles container growth / side-panel open/close),
-    // then fit to the markers — capped so a single far-flung pin doesn't zoom to street level.
-    map.invalidateSize()
-    if (markers.length > 0) {
-      const group = L.featureGroup(markers)
-      map.fitBounds(group.getBounds().pad(0.15), { maxZoom: 13 })
-    }
-  }
 
   return (
     <>
