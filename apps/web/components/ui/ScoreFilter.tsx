@@ -21,7 +21,7 @@ export default function ScoreFilter({ value, onChange, className = '' }: Props) 
     <select
       value={value}
       onChange={e => onChange(Number(e.target.value))}
-      className={`bg-navy border border-navy-border text-white text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-gold/50 ${className}`}
+      className={`focus-ring h-8 rounded-lg border border-input bg-surface-container px-3 text-xs text-foreground focus:border-ring ${className}`}
     >
       {OPTIONS.map(o => (
         <option key={o.value} value={o.value}>{o.label}</option>

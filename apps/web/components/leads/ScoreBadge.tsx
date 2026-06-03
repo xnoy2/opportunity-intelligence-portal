@@ -1,15 +1,17 @@
 'use client'
 
-interface Props { score: number }
+interface Props { score: number; size?: 'sm' | 'lg' }
 
-export default function ScoreBadge({ score }: Props) {
-  const color =
-    score >= 85 ? 'bg-success/15 text-success border-success/30' :
-    score >= 70 ? 'bg-warning/15 text-warning border-warning/30' :
-    'bg-white/5 text-muted border-white/10'
+export default function ScoreBadge({ score, size = 'sm' }: Props) {
+  const tone =
+    score >= 85 ? 'bg-success/15 text-success' :
+    score >= 70 ? 'bg-warning/15 text-warning' :
+    'bg-muted text-muted-foreground'
+
+  const dims = size === 'lg' ? 'h-14 w-14 text-xl rounded-2xl' : 'h-10 w-10 text-sm rounded-xl'
 
   return (
-    <span className={`inline-flex items-center justify-center w-10 h-7 rounded text-xs font-bold border ${color}`}>
+    <span className={`inline-flex items-center justify-center font-medium tabular-nums ${dims} ${tone}`}>
       {score}
     </span>
   )

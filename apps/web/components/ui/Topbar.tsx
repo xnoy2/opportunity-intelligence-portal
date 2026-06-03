@@ -2,27 +2,33 @@
 
 import { useEffect, useState } from 'react'
 import { getStoredUser } from '@/lib/auth'
+import ThemeToggle from '@/components/theme/ThemeToggle'
 import type { User } from '@/types'
 
-interface Props { title: string }
+interface Props { title: string; subtitle?: string }
 
-export default function Topbar({ title }: Props) {
+export default function Topbar({ title, subtitle }: Props) {
   const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => { setUser(getStoredUser()) }, [])
 
   return (
-    <header className="h-14 border-b border-navy-border bg-navy-card/80 backdrop-blur-sm flex items-center justify-between px-6 sticky top-0 z-10">
-      <h1 className="text-white font-semibold text-base">{title}</h1>
-      <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-10 flex h-16 items-center justify-between bg-background/85 px-6 backdrop-blur-md">
+      <div>
+        <h1 className="text-[22px] font-normal leading-tight text-foreground">{title}</h1>
+        {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <ThemeToggle />
         {user && (
-          <div className="text-right">
-            <p className="text-white text-sm font-medium">{user.name ?? user.email}</p>
-            <p className="text-muted text-xs">{user.company} · {user.role}</p>
+          <div className="ml-1 hidden text-right sm:block">
+            <p className="text-sm font-medium leading-tight text-foreground">{user.name ?? user.email}</p>
+            <p className="text-xs leading-tight text-muted-foreground">{user.company} · {user.role}</p>
           </div>
         )}
-        <div className="w-8 h-8 rounded-full bg-gold/20 border border-gold/40 flex items-center justify-center text-gold text-xs font-bold">
-          {user?.name?.[0] ?? user?.email?.[0]?.toUpperCase() ?? '?'}
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-container text-sm font-medium text-primary-on-container">
+          {user?.name?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? '?'}
         </div>
       </div>
     </header>

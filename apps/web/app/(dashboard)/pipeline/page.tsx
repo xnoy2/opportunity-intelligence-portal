@@ -2,69 +2,65 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { ArrowRight, X } from 'lucide-react'
 import Topbar from '@/components/ui/Topbar'
 import ScoreBadge from '@/components/leads/ScoreBadge'
 import CompanyBadge from '@/components/leads/CompanyBadge'
 import { getLeads, updateLeadStatus } from '@/lib/api'
+import { fmtCurrency } from '@/lib/format'
 import type { Lead, LeadStatus } from '@/types'
 
-const STAGES: { key: LeadStatus; label: string; color: string }[] = [
-  { key: 'NEW',         label: 'New Lead',    color: 'border-accent/40'   },
-  { key: 'REVIEWED',    label: 'Reviewed',    color: 'border-white/20'    },
-  { key: 'CONTACTED',   label: 'Contacted',   color: 'border-warning/40'  },
-  { key: 'QUOTE_SENT',  label: 'Quote Sent',  color: 'border-gold/40'     },
-  { key: 'FOLLOW_UP',   label: 'Follow Up',   color: 'border-orange-400/40'},
-  { key: 'NEGOTIATION', label: 'Negotiation', color: 'border-purple-400/40'},
-  { key: 'WON',         label: 'Won',         color: 'border-success/40'  },
-  { key: 'LOST',        label: 'Lost',        color: 'border-danger/40'   },
+const STAGES: { key: LeadStatus; label: string; accent: string }[] = [
+  { key: 'NEW',         label: 'New Lead',    accent: 'bg-info' },
+  { key: 'REVIEWED',    label: 'Reviewed',    accent: 'bg-muted-foreground' },
+  { key: 'CONTACTED',   label: 'Contacted',   accent: 'bg-warning' },
+  { key: 'QUOTE_SENT',  label: 'Quote Sent',  accent: 'bg-primary' },
+  { key: 'FOLLOW_UP',   label: 'Follow Up',   accent: 'bg-warning' },
+  { key: 'NEGOTIATION', label: 'Negotiation', accent: 'bg-violet' },
+  { key: 'WON',         label: 'Won',         accent: 'bg-success' },
+  { key: 'LOST',        label: 'Lost',        accent: 'bg-danger' },
 ]
-
-function fmt(n: number) {
-  if (n >= 1_000_000) return `£${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `£${(n / 1_000).toFixed(0)}k`
-  return `£${n}`
-}
 
 function LeadCard({ lead, onMove }: { lead: Lead; onMove: (id: string, status: LeadStatus) => void }) {
   const nextStages = STAGES.filter(s => s.key !== lead.status && s.key !== 'LOST')
 
   return (
-    <div className="bg-navy border border-navy-border rounded-lg p-3 space-y-2 hover:border-white/20 transition-colors">
+    <div className="rounded-2xl bg-card p-3.5 shadow-e1 transition-shadow hover:shadow-e2">
       <div className="flex items-start justify-between gap-2">
-        <Link href={`/leads/${lead.id}`} className="text-accent hover:text-white text-xs font-mono transition-colors truncate flex-1">
+        <Link
+          href={`/leads/${lead.id}`}
+          className="truncate font-mono text-xs font-medium text-info transition-colors hover:underline"
+        >
           {lead.planningRef}
         </Link>
         <ScoreBadge score={lead.leadScore} />
       </div>
-      {lead.projectType && (
-        <p className="text-white/80 text-xs truncate">{lead.projectType}</p>
-      )}
-      {lead.location && (
-        <p className="text-muted text-xs truncate">{lead.location}</p>
-      )}
-      <div className="flex items-center justify-between">
+
+      {lead.projectType && <p className="mt-2 truncate text-xs text-foreground/80">{lead.projectType}</p>}
+      {lead.location && <p className="truncate text-xs text-muted-foreground">{lead.location}</p>}
+
+      <div className="mt-2 flex items-center justify-between">
         <CompanyBadge company={lead.assignedCompany} />
-        {lead.estimatedValue && (
-          <span className="text-gold text-xs font-medium">{fmt(lead.estimatedValue)}</span>
-        )}
+        {lead.estimatedValue && <span className="text-xs font-medium text-primary">{fmtCurrency(lead.estimatedValue)}</span>}
       </div>
-      {/* Quick move buttons */}
-      <div className="flex gap-1 pt-1">
+
+      {/* Quick move */}
+      <div className="mt-3 flex flex-wrap gap-1.5 border-t border-border pt-3">
         {nextStages.slice(0, 2).map(s => (
           <button
             key={s.key}
             onClick={() => onMove(lead.id, s.key)}
-            className="text-[10px] px-2 py-0.5 rounded border border-navy-border text-muted hover:text-white hover:border-white/30 transition-colors"
+            className="state-layer inline-flex items-center gap-1 rounded-lg border border-outline px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
-            → {s.label}
+            <ArrowRight className="h-2.5 w-2.5" /> {s.label}
           </button>
         ))}
         {lead.status !== 'LOST' && (
           <button
             onClick={() => onMove(lead.id, 'LOST')}
-            className="text-[10px] px-2 py-0.5 rounded border border-danger/20 text-danger/60 hover:text-danger hover:border-danger/50 transition-colors ml-auto"
+            className="state-layer ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-medium text-danger transition-colors"
           >
-            Lost
+            <X className="h-2.5 w-2.5" /> Lost
           </button>
         )}
       </div>
@@ -96,46 +92,43 @@ export default function PipelinePage() {
 
   return (
     <div>
-      <Topbar title="Pipeline" />
+      <Topbar title="Pipeline" subtitle="Move leads through your sales stages" />
 
       <div className="p-6">
         {loading ? (
           <div className="flex gap-4 overflow-x-auto pb-4">
             {STAGES.map(s => (
-              <div key={s.key} className="flex-shrink-0 w-56 bg-navy-card border border-navy-border rounded-lg p-3 space-y-2">
-                <div className="h-4 bg-navy-border rounded animate-pulse" />
-                {Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="h-24 bg-navy-border rounded animate-pulse" />
-                ))}
+              <div key={s.key} className="w-64 flex-shrink-0 space-y-2 rounded-3xl bg-surface-container p-3">
+                <div className="skeleton h-4 w-24" />
+                {Array.from({ length: 2 }).map((_, i) => <div key={i} className="skeleton h-24 rounded-2xl" />)}
               </div>
             ))}
           </div>
         ) : (
-          <div className="flex gap-4 overflow-x-auto pb-4 min-h-[60vh]">
+          <div className="flex min-h-[60vh] gap-4 overflow-x-auto pb-4">
             {STAGES.map(stage => {
               const cards = byStage(stage.key)
               const val = stageValue(stage.key)
               return (
-                <div key={stage.key} className={`flex-shrink-0 w-60 bg-navy-card border-t-2 ${stage.color} border-x border-b border-navy-border rounded-lg flex flex-col`}>
+                <div key={stage.key} className="flex w-64 flex-shrink-0 flex-col rounded-3xl bg-surface-container">
                   {/* Column header */}
-                  <div className="px-3 py-3 border-b border-navy-border">
+                  <div className="px-4 py-3.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-white text-xs font-semibold">{stage.label}</span>
-                      <span className="text-muted text-xs bg-navy rounded-full px-2 py-0.5">{cards.length}</span>
+                      <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <span className={`h-2 w-2 rounded-full ${stage.accent}`} />
+                        {stage.label}
+                      </span>
+                      <span className="rounded-full bg-card px-2 py-0.5 text-xs tabular-nums text-muted-foreground">{cards.length}</span>
                     </div>
-                    {val > 0 && (
-                      <p className="text-gold text-xs mt-1">{fmt(val)}</p>
-                    )}
+                    {val > 0 && <p className="mt-1 pl-4 text-xs font-medium text-primary">{fmtCurrency(val)}</p>}
                   </div>
 
                   {/* Cards */}
-                  <div className="flex-1 p-2 space-y-2 overflow-y-auto">
+                  <div className="flex-1 space-y-2.5 overflow-y-auto px-2.5 pb-2.5">
                     {cards.length === 0 ? (
-                      <p className="text-muted text-xs text-center py-6">Empty</p>
+                      <p className="py-8 text-center text-xs text-muted-foreground">Empty</p>
                     ) : (
-                      cards.map(lead => (
-                        <LeadCard key={lead.id} lead={lead} onMove={handleMove} />
-                      ))
+                      cards.map(lead => <LeadCard key={lead.id} lead={lead} onMove={handleMove} />)
                     )}
                   </div>
                 </div>

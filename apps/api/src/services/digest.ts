@@ -26,7 +26,7 @@ function scoreBadge(score: number) {
 }
 
 function generateHtml(leads: Awaited<ReturnType<typeof getTopLeads>>, stats: { total: number; pipeline: number; newThisWeek: number }) {
-  const rows = leads.map(l => `
+  const rows = leads.map((l: (typeof leads)[number]) => `
     <tr style="border-bottom:1px solid #1E2D42;">
       <td style="padding:12px 16px;white-space:nowrap;">${scoreBadge(l.leadScore)}</td>
       <td style="padding:12px 16px;">

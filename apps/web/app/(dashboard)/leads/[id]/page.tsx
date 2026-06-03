@@ -3,13 +3,15 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { ArrowLeft, ExternalLink, Sparkles, Lightbulb, MessageSquarePlus, Banknote } from 'lucide-react'
 import Topbar from '@/components/ui/Topbar'
+import Button from '@/components/ui/Button'
 import Skeleton from '@/components/ui/Skeleton'
 import ScoreBadge from '@/components/leads/ScoreBadge'
 import CompanyBadge from '@/components/leads/CompanyBadge'
 import StatusBadge from '@/components/leads/StatusBadge'
 import { getLead, updateLeadStatus, addNote } from '@/lib/api'
-import { getStoredUser } from '@/lib/auth'
+import { fmtCurrency } from '@/lib/format'
 import type { Lead, LeadStatus } from '@/types'
 
 const STATUSES: LeadStatus[] = ['NEW','REVIEWED','CONTACTED','QUOTE_SENT','FOLLOW_UP','NEGOTIATION','WON','LOST']
@@ -17,8 +19,8 @@ const STATUSES: LeadStatus[] = ['NEW','REVIEWED','CONTACTED','QUOTE_SENT','FOLLO
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <p className="text-muted text-xs uppercase tracking-wider mb-1">{label}</p>
-      <div className="text-white text-sm">{value ?? <span className="text-muted">—</span>}</div>
+      <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <div className="text-sm text-foreground">{value ?? <span className="text-muted-foreground">—</span>}</div>
     </div>
   )
 }
@@ -31,7 +33,6 @@ export default function LeadDetailPage() {
   const [note, setNote] = useState('')
   const [savingNote, setSavingNote] = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState(false)
-  const user = getStoredUser()
 
   useEffect(() => {
     getLead(id)
@@ -62,41 +63,37 @@ export default function LeadDetailPage() {
     finally { setSavingNote(false) }
   }
 
-  function fmt(n: number) {
-    if (n >= 1_000_000) return `£${(n / 1_000_000).toFixed(1)}M`
-    if (n >= 1_000) return `£${(n / 1_000).toFixed(0)}k`
-    return `£${n}`
-  }
-
   return (
     <div>
       <Topbar title="Lead Detail" />
 
-      <div className="p-6 max-w-5xl">
-        {/* Back */}
-        <Link href="/leads" className="text-muted text-sm hover:text-white transition-colors mb-4 inline-flex items-center gap-1">
-          ← Back to Leads
+      <div className="mx-auto max-w-5xl p-6">
+        <Link
+          href="/leads"
+          className="mb-5 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to Leads
         </Link>
 
         {loading ? (
-          <div className="space-y-4 mt-4">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-40 w-full" />
-            <Skeleton className="h-40 w-full" />
+          <div className="space-y-4">
+            <Skeleton className="h-28 w-full rounded-2xl" />
+            <Skeleton className="h-40 w-full rounded-2xl" />
+            <Skeleton className="h-40 w-full rounded-2xl" />
           </div>
         ) : lead ? (
-          <div className="mt-4 space-y-5">
+          <div className="animate-fade-in space-y-5">
             {/* Header */}
-            <div className="bg-navy-card border border-navy-border rounded-lg p-5">
-              <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="md-card p-6">
+              <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <ScoreBadge score={lead.leadScore} />
+                  <ScoreBadge score={lead.leadScore} size="lg" />
                   <div>
-                    <h2 className="text-white font-bold text-lg font-mono">{lead.planningRef}</h2>
-                    <p className="text-muted text-sm mt-0.5">{lead.location ?? 'Location unknown'}</p>
+                    <h2 className="font-mono text-xl font-medium text-foreground">{lead.planningRef}</h2>
+                    <p className="mt-0.5 text-sm text-muted-foreground">{lead.location ?? 'Location unknown'}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2.5">
                   <CompanyBadge company={lead.assignedCompany} />
                   <StatusBadge status={lead.status} />
                   {lead.sourceUrl && (
@@ -104,46 +101,50 @@ export default function LeadDetailPage() {
                       href={lead.sourceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs border border-navy-border text-muted hover:text-white hover:border-white/30 rounded px-3 py-1.5 transition-colors"
+                      className="state-layer inline-flex h-9 items-center gap-1.5 rounded-full border border-outline px-4 text-xs font-medium text-foreground transition-colors"
                     >
-                      View on portal ↗
+                      View on portal <ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   )}
                 </div>
               </div>
 
-              {/* Estimated value */}
               {lead.estimatedValue && (
-                <div className="mt-4 inline-flex items-center gap-2 bg-gold/10 border border-gold/20 rounded-lg px-4 py-2">
-                  <span className="text-muted text-xs">Estimated value</span>
-                  <span className="text-gold font-bold">{fmt(lead.estimatedValue)}</span>
+                <div className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-primary-container px-4 py-2.5 text-primary-on-container">
+                  <Banknote className="h-4 w-4" />
+                  <span className="text-xs opacity-80">Estimated value</span>
+                  <span className="font-medium">{fmtCurrency(lead.estimatedValue)}</span>
                 </div>
               )}
             </div>
 
-            {/* AI Summary + Suggested Action */}
+            {/* AI Analysis */}
             {(lead.aiSummary || lead.suggestedAction) && (
-              <div className="bg-navy-card border border-navy-border rounded-lg p-5 space-y-4">
-                <h3 className="text-white font-semibold text-sm">AI Analysis</h3>
+              <div className="md-card space-y-4 p-6">
+                <h3 className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <Sparkles className="h-4 w-4 text-primary" /> AI Analysis
+                </h3>
                 {lead.aiSummary && (
                   <div>
-                    <p className="text-muted text-xs uppercase tracking-wider mb-1">Summary</p>
-                    <p className="text-white/90 text-sm leading-relaxed">{lead.aiSummary}</p>
+                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Summary</p>
+                    <p className="text-sm leading-relaxed text-foreground/90">{lead.aiSummary}</p>
                   </div>
                 )}
                 {lead.suggestedAction && (
-                  <div>
-                    <p className="text-muted text-xs uppercase tracking-wider mb-1">Suggested Action</p>
-                    <p className="text-white/90 text-sm leading-relaxed">{lead.suggestedAction}</p>
+                  <div className="rounded-2xl bg-surface-container p-4">
+                    <p className="mb-1 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      <Lightbulb className="h-3.5 w-3.5" /> Suggested Action
+                    </p>
+                    <p className="text-sm leading-relaxed text-foreground/90">{lead.suggestedAction}</p>
                   </div>
                 )}
               </div>
             )}
 
-            {/* Details grid */}
-            <div className="bg-navy-card border border-navy-border rounded-lg p-5">
-              <h3 className="text-white font-semibold text-sm mb-4">Application Details</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+            {/* Details */}
+            <div className="md-card p-6">
+              <h3 className="mb-4 text-sm font-medium text-foreground">Application Details</h3>
+              <div className="grid grid-cols-2 gap-5 md:grid-cols-3">
                 <Field label="Project Type" value={lead.projectType} />
                 <Field label="Applicant" value={lead.applicantName} />
                 <Field label="Postcode" value={lead.postcode} />
@@ -153,27 +154,27 @@ export default function LeadDetailPage() {
               </div>
               {lead.description && (
                 <div className="mt-5">
-                  <p className="text-muted text-xs uppercase tracking-wider mb-2">Description</p>
-                  <p className="text-white/80 text-sm leading-relaxed bg-navy rounded-lg p-4 border border-navy-border">
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Description</p>
+                  <p className="rounded-2xl bg-surface-container p-4 text-sm leading-relaxed text-foreground/80">
                     {lead.description}
                   </p>
                 </div>
               )}
             </div>
 
-            {/* Pipeline actions */}
-            <div className="bg-navy-card border border-navy-border rounded-lg p-5">
-              <h3 className="text-white font-semibold text-sm mb-4">Update Pipeline Stage</h3>
+            {/* Pipeline actions — MD3 filter chips */}
+            <div className="md-card p-6">
+              <h3 className="mb-4 text-sm font-medium text-foreground">Update Pipeline Stage</h3>
               <div className="flex flex-wrap gap-2">
                 {STATUSES.map(s => (
                   <button
                     key={s}
                     disabled={updatingStatus || lead.status === s}
                     onClick={() => handleStatusChange(s)}
-                    className={`text-xs px-3 py-1.5 rounded-md border transition-colors disabled:cursor-not-allowed ${
+                    className={`state-layer h-8 rounded-lg px-3 text-xs font-medium transition-colors disabled:cursor-not-allowed ${
                       lead.status === s
-                        ? 'bg-gold/15 border-gold/40 text-gold'
-                        : 'border-navy-border text-muted hover:text-white hover:border-white/30 disabled:opacity-40'
+                        ? 'bg-primary-container text-primary-on-container'
+                        : 'border border-outline text-muted-foreground hover:text-foreground disabled:opacity-40'
                     }`}
                   >
                     {s.replace('_', ' ')}
@@ -183,42 +184,43 @@ export default function LeadDetailPage() {
             </div>
 
             {/* Notes */}
-            <div className="bg-navy-card border border-navy-border rounded-lg p-5">
-              <h3 className="text-white font-semibold text-sm mb-4">Notes</h3>
+            <div className="md-card p-6">
+              <h3 className="mb-4 text-sm font-medium text-foreground">Notes</h3>
 
-              <form onSubmit={handleNoteSubmit} className="space-y-3 mb-5">
+              <form onSubmit={handleNoteSubmit} className="mb-5 space-y-3">
                 <textarea
                   value={note}
                   onChange={e => setNote(e.target.value)}
                   placeholder="Add a note…"
                   rows={3}
-                  className="w-full bg-navy border border-navy-border rounded-lg px-3 py-2.5 text-white text-sm placeholder-muted focus:outline-none focus:border-gold/50 resize-none transition-colors"
+                  className="focus-ring w-full resize-none rounded-2xl border border-input bg-surface-container px-4 py-3 text-sm text-foreground placeholder-muted-foreground transition-colors focus:border-ring"
                 />
-                <button
-                  type="submit"
-                  disabled={savingNote || !note.trim()}
-                  className="bg-gold hover:bg-gold-dark text-navy text-sm font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
+                <Button type="submit" icon={MessageSquarePlus} loading={savingNote} disabled={!note.trim()}>
                   {savingNote ? 'Saving…' : 'Add Note'}
-                </button>
+                </Button>
               </form>
 
               {lead.notes && lead.notes.length > 0 ? (
                 <div className="space-y-3">
                   {lead.notes.map(n => (
-                    <div key={n.id} className="bg-navy rounded-lg p-4 border border-navy-border">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-white text-xs font-medium">{n.author}</span>
-                        <span className="text-muted text-xs">
-                          {new Date(n.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                    <div key={n.id} className="flex gap-3 rounded-2xl bg-surface-container p-4">
+                      <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-container text-[11px] font-medium text-primary-on-container">
+                        {n.author.slice(0, 2).toUpperCase()}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-0.5 flex items-center justify-between gap-2">
+                          <span className="truncate text-xs font-medium text-foreground">{n.author}</span>
+                          <span className="flex-shrink-0 text-xs text-muted-foreground">
+                            {new Date(n.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <p className="text-sm text-foreground/80">{n.note}</p>
                       </div>
-                      <p className="text-white/80 text-sm">{n.note}</p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-muted text-sm">No notes yet.</p>
+                <p className="text-sm text-muted-foreground">No notes yet.</p>
               )}
             </div>
           </div>

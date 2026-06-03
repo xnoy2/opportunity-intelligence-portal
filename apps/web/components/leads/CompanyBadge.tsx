@@ -2,19 +2,20 @@
 
 import type { Company } from '@/types'
 
+// MD3 tonal chips
 const styles: Record<string, string> = {
-  BGR:      'bg-accent/15 text-accent border-accent/30',
-  BWDS:     'bg-purple-400/15 text-purple-400 border-purple-400/30',
-  BCF:      'bg-success/15 text-success border-success/30',
-  MULTIPLE: 'bg-gold/15 text-gold border-gold/30',
+  BGR:      'bg-info/15 text-info',
+  BWDS:     'bg-violet/15 text-violet',
+  BCF:      'bg-success/15 text-success',
+  MULTIPLE: 'bg-primary-container text-primary-on-container',
 }
 
 interface Props { company: Company | null }
 
 export default function CompanyBadge({ company }: Props) {
-  if (!company) return <span className="text-muted text-xs">—</span>
+  if (!company) return <span className="text-muted-foreground text-xs">—</span>
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${styles[company] ?? 'bg-white/5 text-muted border-white/10'}`}>
+    <span className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium ${styles[company] ?? 'bg-muted text-muted-foreground'}`}>
       {company}
     </span>
   )

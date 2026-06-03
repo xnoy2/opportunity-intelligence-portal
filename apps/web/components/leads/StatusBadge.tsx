@@ -14,21 +14,33 @@ const labels: Record<LeadStatus, string> = {
 }
 
 const styles: Record<LeadStatus, string> = {
-  NEW:         'bg-accent/15 text-accent border-accent/30',
-  REVIEWED:    'bg-white/10 text-white/70 border-white/15',
-  CONTACTED:   'bg-warning/15 text-warning border-warning/30',
-  QUOTE_SENT:  'bg-gold/15 text-gold border-gold/30',
-  FOLLOW_UP:   'bg-orange-400/15 text-orange-400 border-orange-400/30',
-  NEGOTIATION: 'bg-purple-400/15 text-purple-400 border-purple-400/30',
-  WON:         'bg-success/15 text-success border-success/30',
-  LOST:        'bg-danger/15 text-danger border-danger/30',
+  NEW:         'bg-info/15 text-info',
+  REVIEWED:    'bg-muted text-muted-foreground',
+  CONTACTED:   'bg-warning/15 text-warning',
+  QUOTE_SENT:  'bg-primary-container text-primary-on-container',
+  FOLLOW_UP:   'bg-warning/15 text-warning',
+  NEGOTIATION: 'bg-violet/15 text-violet',
+  WON:         'bg-success/15 text-success',
+  LOST:        'bg-danger/15 text-danger',
+}
+
+const dot: Record<LeadStatus, string> = {
+  NEW:         'bg-info',
+  REVIEWED:    'bg-muted-foreground',
+  CONTACTED:   'bg-warning',
+  QUOTE_SENT:  'bg-primary',
+  FOLLOW_UP:   'bg-warning',
+  NEGOTIATION: 'bg-violet',
+  WON:         'bg-success',
+  LOST:        'bg-danger',
 }
 
 interface Props { status: LeadStatus }
 
 export default function StatusBadge({ status }: Props) {
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${styles[status]}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium ${styles[status]}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${dot[status]}`} />
       {labels[status]}
     </span>
   )

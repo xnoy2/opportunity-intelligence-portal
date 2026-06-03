@@ -2,34 +2,139 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  html { @apply bg-navy text-white; }
+/*
+ * Material Design 3 (Material You) — warm-gold tonal theme.
+ * Token names are kept backward-compatible (background, card, muted, primary…)
+ * but mapped to MD3 roles (surface, surface-container, primary, outline…).
+ */
 
-  body {
-    @apply bg-navy text-white antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+@layer base {
+  :root {
+    /* Surfaces — cool slate neutrals */
+    --background: 210 40% 98%;          /* slate-50 */
+    --foreground: 222 47% 11%;          /* slate-900 */
+    --card: 0 0% 100%;                  /* white (elevated cards) */
+    --card-foreground: 222 47% 11%;
+    --surface-container: 210 40% 96%;   /* slate-100 */
+    --surface-container-high: 214 32% 91%;  /* slate-200 */
+    --surface-container-highest: 213 27% 84%; /* slate-300 */
+
+    /* Muted / variant */
+    --muted: 210 40% 96%;               /* slate-100 (filled fields) */
+    --muted-foreground: 215 16% 47%;    /* slate-500 */
+    --accent: 210 40% 96%;              /* hover surface */
+    --accent-foreground: 222 47% 11%;
+
+    /* Primary (indigo) */
+    --primary: 243 75% 59%;             /* indigo-600 */
+    --primary-foreground: 0 0% 100%;
+    --primary-container: 226 100% 94%;  /* indigo-100 */
+    --on-primary-container: 243 47% 34%; /* indigo-900 */
+
+    /* Lines */
+    --border: 214 32% 91%;              /* slate-200 */
+    --outline: 215 20% 65%;             /* slate-400 */
+    --input: 213 27% 84%;               /* slate-300 */
+    --ring: 243 75% 59%;
+
+    /* Semantic */
+    --success: 160 84% 31%;             /* emerald-600 */
+    --warning: 32 95% 44%;              /* amber-600 */
+    --danger: 0 72% 51%;                /* red-600 */
+    --info: 200 98% 39%;                /* sky-600 */
+    --violet: 262 83% 58%;              /* violet-600 */
+
+    --radius: 1rem;
   }
 
-  ::-webkit-scrollbar { @apply w-1.5 h-1.5; }
-  ::-webkit-scrollbar-track { @apply bg-navy; }
-  ::-webkit-scrollbar-thumb { @apply bg-navy-border rounded-full; }
-  ::-webkit-scrollbar-thumb:hover { @apply bg-muted; }
+  .dark {
+    --background: 222 47% 11%;          /* slate-900 */
+    --foreground: 210 40% 96%;          /* slate-100 */
+    --card: 217 33% 17%;                /* slate-800 */
+    --card-foreground: 210 40% 96%;
+    --surface-container: 217 33% 17%;   /* slate-800 */
+    --surface-container-high: 215 25% 27%;  /* slate-700 */
+    --surface-container-highest: 215 19% 35%; /* slate-600 */
+
+    --muted: 217 33% 17%;               /* slate-800 */
+    --muted-foreground: 215 20% 65%;    /* slate-400 */
+    --accent: 215 25% 27%;              /* slate-700 */
+    --accent-foreground: 210 40% 96%;
+
+    --primary: 235 94% 74%;             /* indigo-400 */
+    --primary-foreground: 244 47% 20%;  /* indigo-950 */
+    --primary-container: 243 53% 42%;   /* indigo-800 */
+    --on-primary-container: 226 100% 94%; /* indigo-100 */
+
+    --border: 215 25% 27%;              /* slate-700 */
+    --outline: 215 19% 35%;             /* slate-600 */
+    --input: 215 19% 35%;
+    --ring: 235 94% 74%;
+
+    --success: 160 64% 52%;             /* emerald-400 */
+    --warning: 43 96% 56%;              /* amber-400 */
+    --danger: 0 91% 71%;                /* red-400 */
+    --info: 199 92% 60%;                /* sky-400 */
+    --violet: 255 92% 76%;              /* violet-400 */
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  html {
+    @apply bg-background text-foreground;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-roboto), Roboto, system-ui, sans-serif;
+  }
+
+  html.theme-transition,
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+  }
+
+  ::-webkit-scrollbar { @apply w-2 h-2; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full;
+    background-color: hsl(var(--outline) / 0.4);
+  }
+  ::-webkit-scrollbar-thumb:hover { background-color: hsl(var(--outline) / 0.6); }
 }
 
-@layer utilities {
-  .text-muted { color: #8B9AAD; }
-  .bg-navy { background-color: #0F1623; }
-  .bg-navy-card { background-color: #131E2E; }
-  .border-navy-border { border-color: #1E2D42; }
-  .bg-navy-hover { background-color: #1A2640; }
-  .text-gold { color: #C9A84C; }
-  .bg-gold { background-color: #C9A84C; }
-  .text-success { color: #3ECF8E; }
-  .text-warning { color: #E2A24B; }
-  .text-danger { color: #F87171; }
-  .text-accent { color: #4A9EFF; }
-  .bg-success { background-color: #3ECF8E; }
-  .bg-warning { background-color: #E2A24B; }
-  .bg-danger { background-color: #F87171; }
-  .bg-accent { background-color: #4A9EFF; }
+@layer components {
+  /* MD3 elevated surface */
+  .md-card {
+    @apply rounded-2xl bg-card text-card-foreground shadow-e1;
+  }
+
+  /* MD3 state layer — translucent overlay on hover/press over any element */
+  .state-layer {
+    @apply relative isolate overflow-hidden;
+  }
+  .state-layer::after {
+    content: '';
+    @apply pointer-events-none absolute inset-0 -z-10 bg-current opacity-0 transition-opacity duration-150;
+  }
+  .state-layer:hover::after { @apply opacity-[0.08]; }
+  .state-layer:active::after { @apply opacity-[0.12]; }
+
+  .skeleton {
+    @apply relative overflow-hidden rounded-lg bg-muted;
+  }
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0 -translate-x-full;
+    background-image: linear-gradient(90deg, transparent, hsl(var(--foreground) / 0.05), transparent);
+    animation: shimmer 1.5s infinite;
+  }
+
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
 }

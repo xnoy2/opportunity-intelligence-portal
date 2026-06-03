@@ -33,7 +33,27 @@ Apply these score modifiers:
 +5 if application is approved
 +5 if postcode is within ~30 miles of Ballycastle (BT54 area, north Antrim coast)
 
-High-value categories: holiday pods/glamping (£15k-£80k+), farm diversification, tourism accommodation. Flag these as CRITICAL.`
+High-value categories: holiday pods/glamping (£15k-£80k+), farm diversification, tourism accommodation. Flag these as CRITICAL.
+
+Use the record_classification tool to return your analysis.`
+
+// Forced tool call guarantees a structured, schema-valid response.
+const CLASSIFY_TOOL = {
+  name: 'record_classification',
+  description: 'Record the structured classification of a planning-application lead.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      project_type:        { type: 'string', description: 'Short project description, e.g. "Garden room", "Window replacement"' },
+      assigned_company:    { type: 'string', enum: ['BGR', 'BWDS', 'BCF', 'MULTIPLE'], description: 'Best-fit company; MULTIPLE only when genuinely cross-company' },
+      lead_score:          { type: 'integer', minimum: 0, maximum: 100, description: 'Lead score 0-100 using the weighting in the system prompt' },
+      estimated_value_gbp: { type: 'integer', minimum: 0, description: 'Best-estimate project value in GBP, 0 if truly unknown' },
+      ai_summary:          { type: 'string', description: '1-2 sentence summary of the opportunity for the sales team' },
+      suggested_action:    { type: 'string', description: 'Concrete next step for the sales team' },
+    },
+    required: ['project_type', 'assigned_company', 'lead_score', 'estimated_value_gbp', 'ai_summary', 'suggested_action'],
+  },
+}
 
 export async function classifyLead(
   description: string,
@@ -48,25 +68,18 @@ export async function classifyLead(
     model: 'claude-sonnet-4-6',
     max_tokens: 1024,
     system: SYSTEM_PROMPT,
+    tools: [CLASSIFY_TOOL],
+    tool_choice: { type: 'tool', name: 'record_classification' },
     messages: [
-      {
-        role: 'user',
-        content: `Analyse this planning application. Return JSON only — no markdown, no backticks, no extra text. Use exactly these fields:\n{"project_type": string, "assigned_company": "BGR"|"BWDS"|"BCF"|"MULTIPLE", "lead_score": number 0-100, "estimated_value_gbp": number, "ai_summary": "2 sentences max", "suggested_action": string}\n\n${content}`,
-      },
+      { role: 'user', content: `Analyse this planning application:\n\n${content}` },
     ],
   })
 
-  const text = message.content[0].type === 'text' ? message.content[0].text.trim() : ''
-
-  // Strip markdown code fences if model adds them despite instructions
-  const clean = text.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim()
-
-  let raw: Record<string, unknown>
-  try {
-    raw = JSON.parse(clean)
-  } catch {
-    throw new Error(`Classifier returned unparseable response: ${text.slice(0, 300)}`)
+  const toolUse = message.content.find(b => b.type === 'tool_use')
+  if (!toolUse || toolUse.type !== 'tool_use') {
+    throw new Error('Classifier did not return a tool_use block')
   }
+  const raw = toolUse.input as Record<string, unknown>
 
   console.log('[classifier] Raw response:', JSON.stringify(raw).slice(0, 200))
 
@@ -80,8 +93,8 @@ export async function classifyLead(
     assigned_company:   (raw.assigned_company ?? raw.assignedCompany ?? raw.company ?? 'MULTIPLE') as ClassificationResult['assigned_company'],
     lead_score:         isNaN(score) ? 50 : Math.max(0, Math.min(100, Math.round(score))),
     estimated_value_gbp: Number(raw.estimated_value_gbp ?? raw.estimatedValue ?? raw.value ?? 0),
-    ai_summary:         String(raw.ai_summary ?? raw.aiSummary ?? raw.summary ?? ''),
-    suggested_action:   String(raw.suggested_action ?? raw.suggestedAction ?? raw.action ?? ''),
+    ai_summary:         String(raw.ai_summary ?? raw.aiSummary ?? raw.summary ?? raw.application_summary ?? ''),
+    suggested_action:   String(raw.suggested_action ?? raw.suggestedAction ?? raw.action ?? raw.next_step ?? ''),
   }
 
   return result
