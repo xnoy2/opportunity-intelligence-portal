@@ -16,11 +16,27 @@ const querySchema = z.object({
 })
 
 function categoryWhere(category: string | undefined) {
+  const icontains = (s: string) => ({ contains: s, mode: 'insensitive' as const })
   switch (category) {
     case 'approved':   return { dateApproved: { not: null } }
     case 'high_value': return { leadScore: { gte: 85 } }
-    case 'tourism':    return { projectType: { contains: 'tourism', mode: 'insensitive' as const } }
-    case 'commercial': return { projectType: { contains: 'commercial', mode: 'insensitive' as const } }
+    case 'tourism':    return { OR: [
+      { projectType: icontains('tourism') },
+      { projectType: icontains('glamping') },
+      { projectType: icontains('holiday') },
+      { projectType: icontains('short term let') },
+      { projectType: icontains('accommodation') },
+      { projectType: icontains('pod') },
+      { projectType: icontains('lodge') },
+      { projectType: icontains('bothy') },
+    ]}
+    case 'commercial': return { OR: [
+      { projectType: icontains('commercial') },
+      { projectType: icontains('office') },
+      { projectType: icontains('retail') },
+      { projectType: icontains('industrial') },
+      { projectType: icontains('mixed use') },
+    ]}
     default:           return {}
   }
 }
@@ -98,7 +114,14 @@ export const leadsRoutes: FastifyPluginAsync = async server => {
         _count: { id: true },
       }),
       server.prisma.lead.count({
-        where: { ...companyWhere, projectType: { contains: 'tourism', mode: 'insensitive' } },
+        where: { ...companyWhere, OR: [
+          { projectType: { contains: 'tourism',       mode: 'insensitive' } },
+          { projectType: { contains: 'glamping',      mode: 'insensitive' } },
+          { projectType: { contains: 'holiday',       mode: 'insensitive' } },
+          { projectType: { contains: 'short term let',mode: 'insensitive' } },
+          { projectType: { contains: 'accommodation', mode: 'insensitive' } },
+          { projectType: { contains: 'bothy',         mode: 'insensitive' } },
+        ]},
       }),
       server.prisma.lead.count({
         where: { ...companyWhere, projectType: { contains: 'farm', mode: 'insensitive' } },
