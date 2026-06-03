@@ -28,6 +28,8 @@ export default function LeafletMap({ leads, onSelect }: Props) {
   useEffect(() => {
     if (!containerRef.current) return
 
+    let resizeObs: ResizeObserver | undefined
+
     const init = async () => {
       const L = (await import('leaflet')).default
 
@@ -86,15 +88,31 @@ export default function LeafletMap({ leads, onSelect }: Props) {
         return marker
       })
 
-      if (leads.length > 0) {
-        const group = L.featureGroup(markersRef.current)
-        map.fitBounds(group.getBounds().pad(0.1))
+      const refit = () => {
+        if (markersRef.current.length > 0) {
+          const group = L.featureGroup(markersRef.current)
+          map.fitBounds(group.getBounds().pad(0.1))
+        }
+      }
+      refit()
+
+      // The container is often 0×0 at init inside a flex/dynamic layout, which
+      // leaves the SVG marker overlay invisible. Recompute size once mounted,
+      // and whenever the container resizes.
+      const fixSize = () => { map.invalidateSize(); refit() }
+      requestAnimationFrame(fixSize)
+      setTimeout(fixSize, 200)
+
+      if (containerRef.current) {
+        resizeObs = new ResizeObserver(() => map.invalidateSize())
+        resizeObs.observe(containerRef.current)
       }
     }
 
     init().catch(console.error)
 
     return () => {
+      resizeObs?.disconnect()
       markersRef.current = []
       mapRef.current?.remove()
       mapRef.current = null
