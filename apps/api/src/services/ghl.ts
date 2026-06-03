@@ -36,11 +36,15 @@ export async function pushToGHL(params: GHLPushParams): Promise<void> {
     return
   }
 
+  // GHL requires email OR phone — use planning ref as a unique traceable email
+  const placeholderEmail = `${params.planningRef.replace(/\//g, '-').toLowerCase()}@planning-lead.bcfportal`
+
   const contactPayload = {
     locationId,
     firstName: `Planning Lead`,
     lastName: params.planningRef,
     name: `Planning Lead — ${params.planningRef}`,
+    email: placeholderEmail,
     customField: {
       planning_ref: params.planningRef,
       lead_score: String(params.score),
