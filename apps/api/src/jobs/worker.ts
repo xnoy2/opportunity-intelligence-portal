@@ -91,7 +91,11 @@ const classifierWorker = new Worker('classifier', async job => {
     },
   })
 
-  if (result.lead_score >= 70) {
+  // Per-company GHL push threshold: BCF leads (play areas, £2k–£8k) score
+  // lower than BGR/BWDS, so they get a lower floor to avoid an empty pipeline.
+  const ghlThreshold = result.assigned_company === 'BCF' ? 50 : 70
+
+  if (result.lead_score >= ghlThreshold) {
     const { contactId, opportunityId } = await pushToGHL({
       leadId,
       planningRef: lead.planningRef,
