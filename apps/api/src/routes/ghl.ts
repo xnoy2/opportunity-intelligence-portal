@@ -29,8 +29,11 @@ export const ghlRoutes: FastifyPluginAsync = async server => {
     const opportunityId: string | undefined =
       opp.id ?? body.opportunity_id ?? body.opportunityId ?? opp.opportunityId
 
+    // NB: GHL's webhook payload misspells this field as "pipleline_stage".
+    // It sends the stage NAME directly (e.g. "Contacted").
     const stageName: string | undefined =
-      opp.pipeline_stage ?? opp.pipelineStage ?? opp.stage ?? opp.stageName ?? body.pipeline_stage
+      body.pipleline_stage ?? body.pipeline_stage ?? opp.pipleline_stage
+      ?? opp.pipeline_stage ?? opp.pipelineStage ?? opp.stage ?? opp.stageName
     const stageId: string | undefined =
       opp.pipelineStageId ?? opp.stageId ?? body.pipelineStageId ?? body.stageId
 
