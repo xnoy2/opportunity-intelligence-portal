@@ -92,7 +92,7 @@ const classifierWorker = new Worker('classifier', async job => {
   })
 
   if (result.lead_score >= 70) {
-    const ghlContactId = await pushToGHL({
+    const { contactId, opportunityId } = await pushToGHL({
       leadId,
       planningRef: lead.planningRef,
       company: result.assigned_company,
@@ -100,11 +100,14 @@ const classifierWorker = new Worker('classifier', async job => {
       location: lead.location ?? '',
       summary: result.ai_summary,
     })
-    // Store GHL contact ID for future pipeline sync
-    if (ghlContactId) {
+    // Store GHL contact + opportunity IDs for bidirectional stage sync
+    if (contactId || opportunityId) {
       await prisma.lead.update({
         where: { id: leadId },
-        data: { ghlContactId },
+        data: {
+          ...(contactId && { ghlContactId: contactId }),
+          ...(opportunityId && { ghlOpportunityId: opportunityId }),
+        },
       })
     }
   }
