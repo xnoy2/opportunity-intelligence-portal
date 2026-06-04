@@ -22,8 +22,11 @@ const STAGES: { key: LeadStatus; label: string; accent: string }[] = [
   { key: 'LOST',        label: 'Lost',        accent: 'bg-danger' },
 ]
 
+// Stages hidden from the card quick-move buttons (still available on the lead detail page)
+const HIDDEN_QUICK_MOVE: LeadStatus[] = ['NEW', 'REVIEWED', 'LOST']
+
 function LeadCard({ lead, onMove }: { lead: Lead; onMove: (id: string, status: LeadStatus) => void }) {
-  const nextStages = STAGES.filter(s => s.key !== lead.status && s.key !== 'LOST')
+  const nextStages = STAGES.filter(s => s.key !== lead.status && !HIDDEN_QUICK_MOVE.includes(s.key))
 
   return (
     <div className="rounded-2xl bg-card p-3.5 shadow-e1 transition-shadow hover:shadow-e2">
@@ -45,26 +48,20 @@ function LeadCard({ lead, onMove }: { lead: Lead; onMove: (id: string, status: L
         {lead.estimatedValue && <span className="text-xs font-medium text-primary">{fmtCurrency(lead.estimatedValue)}</span>}
       </div>
 
-      {/* Quick move */}
-      <div className="mt-3 flex flex-wrap gap-1.5 border-t border-border pt-3">
-        {nextStages.slice(0, 2).map(s => (
-          <button
-            key={s.key}
-            onClick={() => onMove(lead.id, s.key)}
-            className="state-layer inline-flex items-center gap-1 rounded-lg border border-outline px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <ArrowRight className="h-2.5 w-2.5" /> {s.label}
-          </button>
-        ))}
-        {lead.status !== 'LOST' && (
-          <button
-            onClick={() => onMove(lead.id, 'LOST')}
-            className="state-layer ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-medium text-danger transition-colors"
-          >
-            <X className="h-2.5 w-2.5" /> Lost
-          </button>
-        )}
-      </div>
+      {/* Quick move — forward progression only */}
+      {nextStages.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5 border-t border-border pt-3">
+          {nextStages.slice(0, 2).map(s => (
+            <button
+              key={s.key}
+              onClick={() => onMove(lead.id, s.key)}
+              className="state-layer inline-flex items-center gap-1 rounded-lg border border-outline px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <ArrowRight className="h-2.5 w-2.5" /> {s.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
