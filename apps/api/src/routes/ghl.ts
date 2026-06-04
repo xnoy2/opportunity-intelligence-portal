@@ -24,15 +24,20 @@ export const ghlRoutes: FastifyPluginAsync = async server => {
     }
 
     const body = (request.body ?? {}) as Record<string, any>
+    // TEMP: log the full payload so we can see GHL's exact field names
+    server.log.info('[ghl-webhook] RAW: ' + JSON.stringify(body))
     const opp = body.opportunity ?? body
 
     const opportunityId: string | undefined =
       opp.id ?? body.opportunity_id ?? body.opportunityId ?? opp.opportunityId
+      ?? body.opportunity_id ?? body['opportunity.id']
 
     const stageName: string | undefined =
-      opp.pipeline_stage ?? opp.pipelineStage ?? opp.stage ?? opp.stageName ?? body.pipeline_stage
+      opp.pipeline_stage ?? opp.pipelineStage ?? opp.stage ?? opp.stageName
+      ?? body.pipeline_stage ?? body['opportunity.pipeline_stage'] ?? body.pipelineStageName
     const stageId: string | undefined =
       opp.pipelineStageId ?? opp.stageId ?? body.pipelineStageId ?? body.stageId
+      ?? body['opportunity.pipeline_stage_id'] ?? body.pipeline_stage_id
 
     if (!opportunityId) {
       server.log.warn('[ghl-webhook] no opportunity id in payload')
