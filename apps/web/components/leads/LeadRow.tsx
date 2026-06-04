@@ -54,8 +54,10 @@ export default function LeadRow({ lead, showPending = false, selectable = false,
       <div className="flex flex-shrink-0 items-center gap-3">
         {lead.estimatedValue ? (
           <span className="text-sm font-medium text-primary">{fmtValueRange(lead.estimatedValue)}</span>
+        ) : lead.classifiedAt ? (
+          <span className="text-xs text-muted-foreground">Not estimated</span>
         ) : (
-          <span className="text-xs text-muted-foreground">—</span>
+          <span className="text-xs text-muted-foreground/50">—</span>
         )}
         <ChevronRight className="h-5 w-5 text-muted-foreground" />
       </div>
@@ -63,14 +65,19 @@ export default function LeadRow({ lead, showPending = false, selectable = false,
   )
 
   if (selectable) {
+    const isClassified = lead.classifiedAt != null
     return (
       <div className={`flex items-center transition-colors ${selected ? 'bg-primary-container/40' : ''}`}>
-        <label className="flex cursor-pointer items-center self-stretch pl-5 pr-1">
+        <label
+          className={`flex items-center self-stretch pl-5 pr-1 ${isClassified ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+          title={isClassified ? 'Already classified — re-classifying costs API usage' : 'Select to classify'}
+        >
           <input
             type="checkbox"
             checked={selected}
+            disabled={isClassified}
             onChange={e => onSelectChange?.(lead.id, e.target.checked)}
-            className="h-4 w-4 cursor-pointer rounded border-outline accent-primary"
+            className="h-4 w-4 cursor-pointer rounded border-outline accent-primary disabled:cursor-not-allowed disabled:opacity-40"
             aria-label={`Select ${lead.planningRef}`}
           />
         </label>

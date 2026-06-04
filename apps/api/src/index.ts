@@ -9,6 +9,7 @@ import { prismaPlugin } from './plugins/prisma.js'
 import { authRoutes } from './routes/auth.js'
 import { leadsRoutes } from './routes/leads.js'
 import { pipelineRoutes } from './routes/pipeline.js'
+import { ghlRoutes } from './routes/ghl.js'
 import { startScheduler } from './jobs/scheduler.js'
 
 const server = Fastify({
@@ -45,6 +46,7 @@ async function main() {
   await server.register(authRoutes, { prefix: '/auth' })
   await server.register(leadsRoutes, { prefix: '/leads' })
   await server.register(pipelineRoutes, { prefix: '/pipeline' })
+  await server.register(ghlRoutes, { prefix: '/ghl' })
 
   server.get('/health', async () => ({
     ok: true,

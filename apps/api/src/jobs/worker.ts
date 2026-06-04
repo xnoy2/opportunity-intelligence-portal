@@ -9,6 +9,7 @@ import { classifyLead } from '../services/classifier.js'
 import { prisma } from '@bcf/db'
 import { pushToGHL } from '../services/ghl.js'
 import { geocodeLead } from '../services/geocoder.js'
+import { isAdministrative } from '../services/prefilter.js'
 
 // ─── Scraper worker ───────────────────────────────────────────────────────────
 
@@ -51,6 +52,24 @@ const classifierWorker = new Worker('classifier', async job => {
   const lead = await prisma.lead.findUnique({ where: { id: leadId } })
   if (!lead?.description) return
 
+  // Pre-filter: administrative applications have no project to value — mark them
+  // classified (so they leave the queue) without spending an Anthropic call.
+  if (isAdministrative(lead.description)) {
+    await prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        projectType: 'Administrative / non-project',
+        leadScore: 0,
+        estimatedValue: 0,
+        aiSummary: 'Skipped — administrative application (condition/amendment/notice), not a project lead.',
+        suggestedAction: '',
+        classifiedAt: new Date(),
+      },
+    })
+    console.log(`[worker] Skipped administrative application ${lead.planningRef} (no AI call)`)
+    return
+  }
+
   console.log(`[worker] Classifying ${lead.planningRef}`)
 
   const result = await classifyLead(lead.description, lead.location ?? undefined)
@@ -73,7 +92,7 @@ const classifierWorker = new Worker('classifier', async job => {
   })
 
   if (result.lead_score >= 70) {
-    const ghlContactId = await pushToGHL({
+    const { contactId, opportunityId } = await pushToGHL({
       leadId,
       planningRef: lead.planningRef,
       company: result.assigned_company,
@@ -81,11 +100,14 @@ const classifierWorker = new Worker('classifier', async job => {
       location: lead.location ?? '',
       summary: result.ai_summary,
     })
-    // Store GHL contact ID for future pipeline sync
-    if (ghlContactId) {
+    // Store GHL contact + opportunity IDs for bidirectional stage sync
+    if (contactId || opportunityId) {
       await prisma.lead.update({
         where: { id: leadId },
-        data: { ghlContactId },
+        data: {
+          ...(contactId && { ghlContactId: contactId }),
+          ...(opportunityId && { ghlOpportunityId: opportunityId }),
+        },
       })
     }
   }
