@@ -1,19 +1,25 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Brain, Loader2, StopCircle, Play, AlertTriangle } from 'lucide-react'
-import { getClassifyStatus, stopClassify, resumeClassify, type ClassifyStatus } from '@/lib/api'
+import { Brain, Loader2, StopCircle, Play, AlertTriangle, RotateCcw, ChevronDown } from 'lucide-react'
+import {
+  getClassifyStatus, stopClassify, resumeClassify,
+  getFailedClassifications, retryFailedClassifications,
+  type ClassifyStatus, type FailedClassification,
+} from '@/lib/api'
 
 interface Props {
-  /** Bump this number to force an immediate refresh (e.g. right after queueing). */
   refreshKey?: number
-  /** Called once when an active run finishes (remaining → 0). */
   onRunComplete?: () => void
 }
 
 export default function ClassificationMonitor({ refreshKey = 0, onRunComplete }: Props) {
   const [status, setStatus] = useState<ClassifyStatus | null>(null)
   const [busy, setBusy] = useState(false)
+  const [showFailed, setShowFailed] = useState(false)
+  const [failed, setFailed] = useState<FailedClassification[]>([])
+  const [loadingFailed, setLoadingFailed] = useState(false)
+  const [retrying, setRetrying] = useState(false)
   const batchTotal = useRef(0)
   const wasRunning = useRef(false)
 
@@ -21,8 +27,6 @@ export default function ClassificationMonitor({ refreshKey = 0, onRunComplete }:
     try {
       const s = await getClassifyStatus()
       const remaining = s.active + s.waiting
-
-      // Track the high-water mark of the current run for the progress bar.
       if (remaining > batchTotal.current) batchTotal.current = remaining
       if (remaining === 0) {
         if (wasRunning.current) onRunComplete?.()
@@ -42,6 +46,28 @@ export default function ClassificationMonitor({ refreshKey = 0, onRunComplete }:
     const id = setInterval(poll, 1500)
     return () => clearInterval(id)
   }, [poll, refreshKey])
+
+  const loadFailed = useCallback(async () => {
+    setLoadingFailed(true)
+    try { setFailed(await getFailedClassifications()) }
+    catch { /* ignore */ }
+    finally { setLoadingFailed(false) }
+  }, [])
+
+  async function toggleFailed() {
+    const next = !showFailed
+    setShowFailed(next)
+    if (next) await loadFailed()
+  }
+
+  async function handleRetry() {
+    setRetrying(true)
+    try {
+      await retryFailedClassifications()
+      await poll()
+      await loadFailed()
+    } finally { setRetrying(false) }
+  }
 
   if (!status) return null
 
@@ -107,7 +133,20 @@ export default function ClassificationMonitor({ refreshKey = 0, onRunComplete }:
       <div className="mt-4 grid grid-cols-3 gap-3">
         <Stat label="Classifying now" value={status.active} tone="text-info" />
         <Stat label="Queued (left)"   value={status.waiting} tone="text-foreground" />
-        <Stat label="Failed"          value={status.failed} tone={status.failed > 0 ? 'text-danger' : 'text-muted-foreground'} icon={status.failed > 0} />
+        <button
+          type="button"
+          onClick={status.failed > 0 ? toggleFailed : undefined}
+          className={`rounded-xl bg-surface-container px-3 py-2.5 text-left transition-colors ${status.failed > 0 ? 'state-layer hover:bg-accent' : 'cursor-default'}`}
+        >
+          <p className="flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Failed
+            {status.failed > 0 && <ChevronDown className={`h-3 w-3 transition-transform ${showFailed ? 'rotate-180' : ''}`} />}
+          </p>
+          <p className={`mt-0.5 flex items-center gap-1 text-xl font-medium tabular-nums ${status.failed > 0 ? 'text-danger' : 'text-muted-foreground'}`}>
+            {status.failed > 0 && <AlertTriangle className="h-4 w-4" />}
+            {status.failed.toLocaleString('en-GB')}
+          </p>
+        </button>
       </div>
 
       {/* Progress bar for the current run */}
@@ -122,18 +161,49 @@ export default function ClassificationMonitor({ refreshKey = 0, onRunComplete }:
           </div>
         </div>
       )}
+
+      {/* Failed list */}
+      {showFailed && (
+        <div className="mt-4 overflow-hidden rounded-xl border border-border">
+          <div className="flex items-center justify-between border-b border-border bg-surface-container px-3 py-2">
+            <p className="text-xs font-medium text-foreground">Failed classifications</p>
+            <button
+              onClick={handleRetry}
+              disabled={retrying || status.failed === 0}
+              className="state-layer inline-flex h-7 items-center gap-1.5 rounded-full bg-primary px-3 text-xs font-medium text-primary-foreground transition-colors disabled:opacity-50"
+            >
+              {retrying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />} Retry all
+            </button>
+          </div>
+          <div className="max-h-64 divide-y divide-border overflow-y-auto">
+            {loadingFailed ? (
+              <p className="px-3 py-4 text-center text-xs text-muted-foreground">Loading…</p>
+            ) : failed.length === 0 ? (
+              <p className="px-3 py-4 text-center text-xs text-muted-foreground">No failed jobs.</p>
+            ) : (
+              failed.map(f => (
+                <div key={f.jobId} className="px-3 py-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-xs font-medium text-foreground">{f.planningRef ?? f.leadId ?? f.jobId}</span>
+                    {f.sourceRegion && <span className="text-[10px] text-muted-foreground">{f.sourceRegion}</span>}
+                  </div>
+                  {f.location && <p className="truncate text-[11px] text-muted-foreground">{f.location}</p>}
+                  <p className="mt-0.5 text-[11px] text-danger">{f.reason}</p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-function Stat({ label, value, tone, icon }: { label: string; value: number; tone: string; icon?: boolean }) {
+function Stat({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
     <div className="rounded-xl bg-surface-container px-3 py-2.5">
       <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={`mt-0.5 flex items-center gap-1 text-xl font-medium tabular-nums ${tone}`}>
-        {icon && <AlertTriangle className="h-4 w-4" />}
-        {value.toLocaleString('en-GB')}
-      </p>
+      <p className={`mt-0.5 text-xl font-medium tabular-nums ${tone}`}>{value.toLocaleString('en-GB')}</p>
     </div>
   )
 }
