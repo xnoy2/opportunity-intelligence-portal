@@ -24,7 +24,7 @@ export default function Topbar({ title, subtitle }: Props) {
         {user && (
           <div className="ml-1 hidden text-right sm:block">
             <p className="text-sm font-medium leading-tight text-foreground">{user.name ?? user.email}</p>
-            <p className="text-xs leading-tight text-muted-foreground">{user.company} · {user.role}</p>
+            <p className="text-xs leading-tight text-muted-foreground">{user.role}</p>
           </div>
         )}
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-container text-sm font-medium text-primary-on-container">
