@@ -12,6 +12,7 @@ const querySchema = z.object({
   region:     z.string().optional(),
   since:      z.string().datetime().optional(),
   category:   z.enum(['approved', 'high_value', 'tourism', 'commercial']).optional(),
+  classified: z.enum(['true', 'false']).optional(),
   unactioned: z.coerce.boolean().optional(),
   limit:      z.coerce.number().default(50),
   offset:     z.coerce.number().default(0),
@@ -64,6 +65,8 @@ export const leadsRoutes: FastifyPluginAsync = async server => {
       ...(q.region && { sourceRegion: q.region }),
       ...(q.since && { createdAt: { gte: new Date(q.since) } }),
       ...categoryWhere(q.category),
+      ...(q.classified === 'false' && { classifiedAt: null }),
+      ...(q.classified === 'true' && { classifiedAt: { not: null } }),
       ...(q.unactioned && { status: { in: ['NEW', 'REVIEWED'] as LeadStatus[] } }),
     }
 
@@ -88,6 +91,7 @@ export const leadsRoutes: FastifyPluginAsync = async server => {
           sourceRegion: true,
           dateSubmitted: true,
           dateApproved: true,
+          classifiedAt: true,
           createdAt: true,
         },
       }),

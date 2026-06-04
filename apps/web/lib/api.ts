@@ -60,6 +60,7 @@ export interface LeadFilters {
   maxScore?: number
   region?: string
   category?: string
+  classified?: 'true' | 'false'
   unactioned?: boolean
   limit?: number
   offset?: number

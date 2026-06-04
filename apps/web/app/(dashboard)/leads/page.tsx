@@ -30,6 +30,7 @@ export default function LeadsPage() {
   const [showActioned, setShowActioned] = useState(false)
   const [scoreTier, setScoreTier]   = useState<ScoreTier>('all')
   const [company, setCompany]       = useState('')
+  const [unclassifiedOnly, setUnclassifiedOnly] = useState(false)
   const [offset, setOffset]         = useState(0)
   const LIMIT = 50
 
@@ -47,6 +48,7 @@ export default function LeadsPage() {
       if (tab !== 'all') filters.category = tab
       if (!showActioned) filters.unactioned = true
       if (company) filters.company = company
+      if (unclassifiedOnly) filters.classified = 'false'
       if (scoreTier !== 'all') {
         filters.minScore = SCORE_TIERS[scoreTier].min
         filters.maxScore = SCORE_TIERS[scoreTier].max
@@ -57,16 +59,20 @@ export default function LeadsPage() {
       setOffset(off)
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
-  }, [tab, showActioned, scoreTier, company])
+  }, [tab, showActioned, scoreTier, company, unclassifiedOnly])
 
   useEffect(() => { load(0) }, [load])
 
   const actioned = leads.filter(l => ACTIONED.has(l.status)).length
   const displayed = showActioned ? leads : leads.filter(l => !ACTIONED.has(l.status))
 
-  const allSelected = displayed.length > 0 && displayed.every(l => selected.has(l.id))
+  // Only unclassified leads can be selected (re-classifying wastes API spend).
+  const selectableLeads = displayed.filter(l => l.classifiedAt == null)
+  const allSelected = selectableLeads.length > 0 && selectableLeads.every(l => selected.has(l.id))
 
   function toggleOne(id: string, checked: boolean) {
+    const lead = leads.find(l => l.id === id)
+    if (lead?.classifiedAt != null) return // guard: never select classified leads
     setSelected(prev => {
       const next = new Set(prev)
       if (checked) next.add(id); else next.delete(id)
@@ -77,7 +83,7 @@ export default function LeadsPage() {
     setSelected(prev => {
       if (allSelected) return new Set()
       const next = new Set(prev)
-      displayed.forEach(l => next.add(l.id))
+      selectableLeads.forEach(l => next.add(l.id))
       return next
     })
   }
@@ -123,6 +129,19 @@ export default function LeadsPage() {
           ))}
 
           <div className="ml-auto flex items-center gap-3">
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => setUnclassifiedOnly(v => !v)}
+                className={`state-layer h-8 rounded-lg px-3 text-xs font-medium transition-colors ${
+                  unclassifiedOnly
+                    ? 'bg-primary-container text-primary-on-container'
+                    : 'border border-outline text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Unclassified only
+              </button>
+            )}
             <CompanyFilter value={company} onChange={setCompany} />
             <ScoreFilter value={scoreTier} onChange={setScoreTier} />
             <label className="flex cursor-pointer items-center gap-2 whitespace-nowrap">
