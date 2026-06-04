@@ -202,7 +202,8 @@ export async function syncStatusToGHL(
   company:         string,
   newStatus:       string,
   ghlOpportunityId: string | null,
-  ghlContactId:    string | null
+  ghlContactId:    string | null,
+  title:           string
 ): Promise<void> {
   const apiKey = API_KEYS[company]
   if (!apiKey) return
@@ -213,7 +214,9 @@ export async function syncStatusToGHL(
     const stageId = info ? stageIdForStatus(info, newStatus) : undefined
     if (info && stageId) {
       try {
+        // GHL v1 PUT requires the `title` field — without it the move is rejected.
         await ghlRequest('PUT', `/pipelines/${info.pipelineId}/opportunities/${ghlOpportunityId}`, apiKey, {
+          title,
           stageId,
           ...(newStatus === 'WON' ? { status: 'won' } : newStatus === 'LOST' ? { status: 'lost' } : { status: 'open' }),
         })

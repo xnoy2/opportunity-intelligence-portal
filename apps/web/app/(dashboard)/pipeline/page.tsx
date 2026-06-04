@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, X, Search } from 'lucide-react'
+import { X, Search } from 'lucide-react'
 import Topbar from '@/components/ui/Topbar'
 import ScoreBadge from '@/components/leads/ScoreBadge'
 import CompanyBadge from '@/components/leads/CompanyBadge'
@@ -22,17 +22,22 @@ const STAGES: { key: LeadStatus; label: string; accent: string }[] = [
   { key: 'LOST',        label: 'Lost',        accent: 'bg-danger' },
 ]
 
-// Stages hidden from the card quick-move buttons (still available on the lead detail page)
-const HIDDEN_QUICK_MOVE: LeadStatus[] = ['NEW', 'REVIEWED', 'LOST']
-
-function LeadCard({ lead, onMove }: { lead: Lead; onMove: (id: string, status: LeadStatus) => void }) {
-  const nextStages = STAGES.filter(s => s.key !== lead.status && !HIDDEN_QUICK_MOVE.includes(s.key))
-
+function LeadCard({ lead, onDragStart, onDragEnd }: {
+  lead: Lead
+  onDragStart: (id: string) => void
+  onDragEnd: () => void
+}) {
   return (
-    <div className="rounded-2xl bg-card p-3.5 shadow-e1 transition-shadow hover:shadow-e2">
+    <div
+      draggable
+      onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; onDragStart(lead.id) }}
+      onDragEnd={onDragEnd}
+      className="cursor-grab rounded-2xl bg-card p-3.5 shadow-e1 transition-shadow hover:shadow-e2 active:cursor-grabbing"
+    >
       <div className="flex items-start justify-between gap-2">
         <Link
           href={`/leads/${lead.id}`}
+          draggable={false}
           className="truncate font-mono text-xs font-medium text-info transition-colors hover:underline"
         >
           {lead.planningRef}
@@ -47,21 +52,6 @@ function LeadCard({ lead, onMove }: { lead: Lead; onMove: (id: string, status: L
         <CompanyBadge company={lead.assignedCompany} />
         {lead.estimatedValue && <span className="text-xs font-medium text-primary">{fmtCurrency(lead.estimatedValue)}</span>}
       </div>
-
-      {/* Quick move — forward progression only */}
-      {nextStages.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-1.5 border-t border-border pt-3">
-          {nextStages.slice(0, 2).map(s => (
-            <button
-              key={s.key}
-              onClick={() => onMove(lead.id, s.key)}
-              className="state-layer inline-flex items-center gap-1 rounded-lg border border-outline px-2 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <ArrowRight className="h-2.5 w-2.5" /> {s.label}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   )
 }
@@ -70,6 +60,8 @@ export default function PipelinePage() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
+  const [draggedId, setDraggedId] = useState<string | null>(null)
+  const [overStage, setOverStage] = useState<LeadStatus | null>(null)
   const { ref: boardRef, dragProps } = useDragScroll()
 
   useEffect(() => {
@@ -79,11 +71,25 @@ export default function PipelinePage() {
       .finally(() => setLoading(false))
   }, [])
 
-  async function handleMove(id: string, status: LeadStatus) {
+  async function moveLead(id: string, status: LeadStatus) {
+    const prev = leads
+    // optimistic update
+    setLeads(cur => cur.map(l => l.id === id ? { ...l, status } : l))
     try {
-      const updated = await updateLeadStatus(id, status)
-      setLeads(prev => prev.map(l => l.id === id ? { ...l, status: updated.status } : l))
-    } catch (e) { console.error(e) }
+      await updateLeadStatus(id, status)
+    } catch (e) {
+      console.error(e)
+      setLeads(prev) // revert on failure
+    }
+  }
+
+  function handleDrop(stage: LeadStatus) {
+    if (draggedId) {
+      const lead = leads.find(l => l.id === draggedId)
+      if (lead && lead.status !== stage) moveLead(draggedId, stage)
+    }
+    setDraggedId(null)
+    setOverStage(null)
   }
 
   const q = query.trim().toLowerCase()
@@ -100,7 +106,7 @@ export default function PipelinePage() {
 
   return (
     <div>
-      <Topbar title="Pipeline" subtitle="Move leads through your sales stages" />
+      <Topbar title="Pipeline" subtitle="Drag leads between stages — synced to GoHighLevel" />
 
       <div className="p-6">
         {/* Search across all stages */}
@@ -141,8 +147,17 @@ export default function PipelinePage() {
             {STAGES.map(stage => {
               const cards = byStage(stage.key)
               const val = stageValue(stage.key)
+              const isOver = overStage === stage.key
               return (
-                <div key={stage.key} className="flex w-64 flex-shrink-0 flex-col rounded-3xl bg-surface-container">
+                <div
+                  key={stage.key}
+                  onDragEnter={e => { e.preventDefault(); if (draggedId) setOverStage(stage.key) }}
+                  onDragOver={e => { if (draggedId) e.preventDefault() }}
+                  onDrop={() => handleDrop(stage.key)}
+                  className={`flex w-64 flex-shrink-0 flex-col rounded-3xl transition-colors ${
+                    isOver ? 'bg-primary-container/40 ring-2 ring-primary' : 'bg-surface-container'
+                  }`}
+                >
                   {/* Column header */}
                   <div className="px-4 py-3.5">
                     <div className="flex items-center justify-between">
@@ -158,9 +173,18 @@ export default function PipelinePage() {
                   {/* Cards */}
                   <div className="flex-1 space-y-2.5 overflow-y-auto px-2.5 pb-2.5">
                     {cards.length === 0 ? (
-                      <p className="py-8 text-center text-xs text-muted-foreground">Empty</p>
+                      <p className="py-8 text-center text-xs text-muted-foreground">
+                        {isOver ? 'Drop here' : 'Empty'}
+                      </p>
                     ) : (
-                      cards.map(lead => <LeadCard key={lead.id} lead={lead} onMove={handleMove} />)
+                      cards.map(lead => (
+                        <LeadCard
+                          key={lead.id}
+                          lead={lead}
+                          onDragStart={setDraggedId}
+                          onDragEnd={() => { setDraggedId(null); setOverStage(null) }}
+                        />
+                      ))
                     )}
                   </div>
                 </div>

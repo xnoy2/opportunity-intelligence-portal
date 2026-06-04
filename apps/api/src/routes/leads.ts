@@ -227,7 +227,8 @@ export const leadsRoutes: FastifyPluginAsync = async server => {
 
     // Portal → GHL: move the opportunity to the matching stage (+ tag contact)
     if (lead.assignedCompany && (lead.ghlOpportunityId || lead.ghlContactId)) {
-      syncStatusToGHL(lead.assignedCompany, status, lead.ghlOpportunityId, lead.ghlContactId).catch(err =>
+      const title = `${lead.planningRef} — ${lead.location || 'Planning Lead'}`
+      syncStatusToGHL(lead.assignedCompany, status, lead.ghlOpportunityId, lead.ghlContactId, title).catch(err =>
         server.log.error('[ghl-sync] ' + err.message)
       )
     }
