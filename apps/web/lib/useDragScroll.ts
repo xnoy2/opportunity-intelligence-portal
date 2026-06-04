@@ -15,7 +15,7 @@ export function useDragScroll<T extends HTMLElement = HTMLDivElement>() {
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     const el = ref.current
     if (!el) return
-    if ((e.target as HTMLElement).closest('button, a, input, select, textarea')) return
+    if ((e.target as HTMLElement).closest('button, a, input, select, textarea, [draggable="true"]')) return
     drag.current = { active: true, startX: e.pageX, scrollLeft: el.scrollLeft }
     el.style.cursor = 'grabbing'
     el.style.userSelect = 'none'
