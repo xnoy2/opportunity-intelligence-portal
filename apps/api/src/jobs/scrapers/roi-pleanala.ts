@@ -9,7 +9,7 @@
  */
 
 import { prisma } from '@bcf/db'
-import { makeQueue } from '../queue.js'
+import { makeQueue, addClassifyJob } from '../queue.js'
 
 const ARCGIS_URL =
   'https://services-eu1.arcgis.com/o56BSnENmD5mYs3j/arcgis/rest/services/Cases_2016_Onwards/FeatureServer/3/query'
@@ -121,7 +121,7 @@ export async function scrapeROIPleanala(daysBack = 90): Promise<{ found: number;
       },
     })
 
-    await classifierQ.add('classify', { leadId: lead.id })
+    await addClassifyJob(classifierQ, lead.id)
     inserted++
   }
 

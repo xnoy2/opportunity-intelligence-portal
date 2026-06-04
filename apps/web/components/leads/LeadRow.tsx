@@ -7,17 +7,22 @@ import CategoryBadge from './CategoryBadge'
 import { fmtValueRange } from '@/lib/format'
 import type { Lead } from '@/types'
 
-export default function LeadRow({ lead, showPending = false }: { lead: Lead; showPending?: boolean }) {
+interface Props {
+  lead: Lead
+  showPending?: boolean
+  selectable?: boolean
+  selected?: boolean
+  onSelectChange?: (id: string, checked: boolean) => void
+}
+
+export default function LeadRow({ lead, showPending = false, selectable = false, selected = false, onSelectChange }: Props) {
   const scoreTone =
     lead.leadScore >= 85 ? 'bg-success/15 text-success' :
     lead.leadScore >= 70 ? 'bg-warning/15 text-warning' :
     'bg-muted text-muted-foreground'
 
-  return (
-    <Link
-      href={`/leads/${lead.id}`}
-      className="state-layer flex items-center gap-4 px-5 py-3.5 text-foreground transition-colors"
-    >
+  const inner = (
+    <>
       {/* Score */}
       <div className={`flex h-12 w-12 flex-shrink-0 flex-col items-center justify-center rounded-2xl ${scoreTone}`}>
         <span className="text-base font-medium leading-none tabular-nums">{lead.leadScore}</span>
@@ -54,6 +59,37 @@ export default function LeadRow({ lead, showPending = false }: { lead: Lead; sho
         )}
         <ChevronRight className="h-5 w-5 text-muted-foreground" />
       </div>
+    </>
+  )
+
+  if (selectable) {
+    return (
+      <div className={`flex items-center transition-colors ${selected ? 'bg-primary-container/40' : ''}`}>
+        <label className="flex cursor-pointer items-center self-stretch pl-5 pr-1">
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={e => onSelectChange?.(lead.id, e.target.checked)}
+            className="h-4 w-4 cursor-pointer rounded border-outline accent-primary"
+            aria-label={`Select ${lead.planningRef}`}
+          />
+        </label>
+        <Link
+          href={`/leads/${lead.id}`}
+          className="state-layer flex flex-1 items-center gap-4 py-3.5 pl-2 pr-5 text-foreground transition-colors"
+        >
+          {inner}
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <Link
+      href={`/leads/${lead.id}`}
+      className="state-layer flex items-center gap-4 px-5 py-3.5 text-foreground transition-colors"
+    >
+      {inner}
     </Link>
   )
 }

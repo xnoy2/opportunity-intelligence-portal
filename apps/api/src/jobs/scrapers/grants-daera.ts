@@ -12,7 +12,7 @@
 
 import * as cheerio from 'cheerio'
 import { prisma } from '@bcf/db'
-import { makeQueue } from '../queue.js'
+import { makeQueue, addClassifyJob } from '../queue.js'
 
 const DAERA_BASE = 'https://www.daera-ni.gov.uk'
 
@@ -122,7 +122,7 @@ export async function scrapeDaeraGrants(): Promise<{ found: number; inserted: nu
       },
     })
 
-    await classifierQ.add('classify', { leadId: lead.id })
+    await addClassifyJob(classifierQ, lead.id)
     inserted++
   }
 

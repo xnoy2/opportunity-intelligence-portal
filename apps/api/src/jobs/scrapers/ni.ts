@@ -10,7 +10,7 @@
  */
 
 import { prisma } from '@bcf/db'
-import { makeQueue } from '../queue.js'
+import { makeQueue, addClassifyJob } from '../queue.js'
 
 const API_BASE   = 'https://api-planningregister-planningportal.pr.tqinfra.co.uk/api/v1'
 const TENANT_ID  = 'cfb86436-414d-4459-9545-93eec37615a2'
@@ -137,7 +137,7 @@ export async function scrapeNI(daysBack = 7): Promise<{ found: number; inserted:
       },
     })
 
-    await classifierQ.add('classify', { leadId: lead.id })
+    await addClassifyJob(classifierQ, lead.id)
     inserted++
 
     await sleep(200)
