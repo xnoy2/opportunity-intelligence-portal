@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, X } from 'lucide-react'
+import { ArrowRight, X, Search } from 'lucide-react'
 import Topbar from '@/components/ui/Topbar'
 import ScoreBadge from '@/components/leads/ScoreBadge'
 import CompanyBadge from '@/components/leads/CompanyBadge'
@@ -72,6 +72,7 @@ function LeadCard({ lead, onMove }: { lead: Lead; onMove: (id: string, status: L
 export default function PipelinePage() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
+  const [query, setQuery] = useState('')
   const { ref: boardRef, dragProps } = useDragScroll()
 
   useEffect(() => {
@@ -88,15 +89,43 @@ export default function PipelinePage() {
     } catch (e) { console.error(e) }
   }
 
-  const byStage = (key: LeadStatus) => leads.filter(l => l.status === key)
+  const q = query.trim().toLowerCase()
+  const visible = q
+    ? leads.filter(l =>
+        [l.planningRef, l.location, l.projectType, l.assignedCompany]
+          .some(v => v?.toLowerCase().includes(q)),
+      )
+    : leads
+
+  const byStage = (key: LeadStatus) => visible.filter(l => l.status === key)
   const stageValue = (key: LeadStatus) =>
-    leads.filter(l => l.status === key).reduce((s, l) => s + (l.estimatedValue ?? 0), 0)
+    visible.filter(l => l.status === key).reduce((s, l) => s + (l.estimatedValue ?? 0), 0)
 
   return (
     <div>
       <Topbar title="Pipeline" subtitle="Move leads through your sales stages" />
 
       <div className="p-6">
+        {/* Search across all stages */}
+        <div className="relative mb-4 max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Search ref, location, project or company…"
+            className="focus-ring h-10 w-full rounded-full border border-input bg-surface-container pl-9 pr-9 text-sm text-foreground placeholder-muted-foreground focus:border-ring"
+          />
+          {query && (
+            <button
+              onClick={() => setQuery('')}
+              aria-label="Clear search"
+              className="state-layer absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
         {loading ? (
           <div className="flex gap-4 overflow-x-auto pb-4">
             {STAGES.map(s => (
