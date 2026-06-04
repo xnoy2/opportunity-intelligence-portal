@@ -54,8 +54,10 @@ export default function LeadRow({ lead, showPending = false, selectable = false,
       <div className="flex flex-shrink-0 items-center gap-3">
         {lead.estimatedValue ? (
           <span className="text-sm font-medium text-primary">{fmtValueRange(lead.estimatedValue)}</span>
+        ) : lead.classifiedAt ? (
+          <span className="text-xs text-muted-foreground">Not estimated</span>
         ) : (
-          <span className="text-xs text-muted-foreground">—</span>
+          <span className="text-xs text-muted-foreground/50">—</span>
         )}
         <ChevronRight className="h-5 w-5 text-muted-foreground" />
       </div>
