@@ -8,6 +8,7 @@ import ScoreBadge from '@/components/leads/ScoreBadge'
 import CompanyBadge from '@/components/leads/CompanyBadge'
 import { getLeads, updateLeadStatus } from '@/lib/api'
 import { fmtCurrency } from '@/lib/format'
+import { useDragScroll } from '@/lib/useDragScroll'
 import type { Lead, LeadStatus } from '@/types'
 
 const STAGES: { key: LeadStatus; label: string; accent: string }[] = [
@@ -71,6 +72,7 @@ function LeadCard({ lead, onMove }: { lead: Lead; onMove: (id: string, status: L
 export default function PipelinePage() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
+  const { ref: boardRef, dragProps } = useDragScroll()
 
   useEffect(() => {
     getLeads({ limit: 200 })
@@ -105,7 +107,11 @@ export default function PipelinePage() {
             ))}
           </div>
         ) : (
-          <div className="flex min-h-[60vh] gap-4 overflow-x-auto pb-4">
+          <div
+            ref={boardRef}
+            {...dragProps}
+            className="flex min-h-[60vh] cursor-grab gap-4 overflow-x-auto pb-4"
+          >
             {STAGES.map(stage => {
               const cards = byStage(stage.key)
               const val = stageValue(stage.key)
