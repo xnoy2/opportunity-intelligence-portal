@@ -76,22 +76,47 @@ interface GHLPushParams {
   summary:     string
 }
 
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
+
+/**
+ * GHL request with automatic retry on transient failures (network errors,
+ * 429 rate limits, 5xx). Without this, a single GHL/Railway hiccup silently
+ * drops a stage sync and the portal/GHL drift apart.
+ */
 async function ghlRequest(
   method: string,
   path: string,
   apiKey: string,
-  body?: unknown
+  body?: unknown,
+  attempt = 1,
 ): Promise<any> {
-  const res = await fetch(`${GHL_API_BASE}${path}`, {
-    method,
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: body ? JSON.stringify(body) : undefined,
-  })
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`GHL ${method} ${path} failed (${res.status}): ${text}`)
+  const MAX_ATTEMPTS = 4
+  try {
+    const res = await fetch(`${GHL_API_BASE}${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+    })
+    if (!res.ok) {
+      const text = await res.text()
+      // Retry transient statuses; fail fast on 4xx (except 429)
+      const transient = res.status === 429 || res.status >= 500
+      if (transient && attempt < MAX_ATTEMPTS) {
+        await sleep(attempt * 800)
+        return ghlRequest(method, path, apiKey, body, attempt + 1)
+      }
+      throw new Error(`GHL ${method} ${path} failed (${res.status}): ${text}`)
+    }
+    return res.json()
+  } catch (err) {
+    // Network/timeout error → retry
+    const isHttpError = err instanceof Error && err.message.startsWith('GHL ')
+    if (!isHttpError && attempt < MAX_ATTEMPTS) {
+      await sleep(attempt * 800)
+      return ghlRequest(method, path, apiKey, body, attempt + 1)
+    }
+    throw err
   }
-  return res.json()
 }
 
 // ─── Pipeline resolution (cached per company for 10 min) ──────────────────────

@@ -110,6 +110,52 @@ export const pipelineRoutes: FastifyPluginAsync = async server => {
     return { resumed: true }
   })
 
+  // GET /pipeline/classify/failed — list failed classification jobs + reasons
+  server.get('/classify/failed', async (request, reply) => {
+    if (request.user.role !== 'ADMIN') return reply.status(403).send({ error: 'Admin only' })
+    const q = makeQueue('classifier')
+    const jobs = await q.getFailed(0, 100)
+    const items = await Promise.all(jobs.map(async job => {
+      const leadId = (job.data as { leadId?: string })?.leadId
+      const lead = leadId
+        ? await server.prisma.lead.findUnique({
+            where: { id: leadId },
+            select: { planningRef: true, location: true, sourceRegion: true },
+          })
+        : null
+      return {
+        jobId:       String(job.id),
+        leadId:      leadId ?? null,
+        planningRef: lead?.planningRef ?? null,
+        location:    lead?.location ?? null,
+        sourceRegion: lead?.sourceRegion ?? null,
+        reason:      (job.failedReason ?? 'Unknown error').split('\n')[0].slice(0, 200),
+      }
+    }))
+    return items
+  })
+
+  // POST /pipeline/classify/retry — re-queue all failed classification jobs
+  server.post('/classify/retry', async (request, reply) => {
+    if (request.user.role !== 'ADMIN') return reply.status(403).send({ error: 'Admin only' })
+    const q = makeQueue('classifier')
+    await q.resume() // so the retried jobs actually process
+    const jobs = await q.getFailed(0, 1000)
+    let retried = 0
+    for (const job of jobs) {
+      try {
+        await job.retry()
+        retried++
+      } catch {
+        // Fallback: if the failed job can't be retried in place, re-add it.
+        const leadId = (job.data as { leadId?: string })?.leadId
+        if (leadId) { await q.add('classify', { leadId }); retried++ }
+      }
+    }
+    console.log(`[pipeline] Retried ${retried} failed classification jobs`)
+    return { retried }
+  })
+
   // GET /pipeline/digest/preview — preview digest HTML (admin only)
   server.get('/digest/preview', async (request, reply) => {
     if (request.user.role !== 'ADMIN') return reply.status(403).send({ error: 'Admin only' })

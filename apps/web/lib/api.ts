@@ -138,3 +138,20 @@ export async function stopClassify(): Promise<{ stopped: boolean }> {
 export async function resumeClassify(): Promise<{ resumed: boolean }> {
   return request('/pipeline/classify/resume', { method: 'POST', body: '{}' })
 }
+
+export interface FailedClassification {
+  jobId: string
+  leadId: string | null
+  planningRef: string | null
+  location: string | null
+  sourceRegion: string | null
+  reason: string
+}
+
+export async function getFailedClassifications(): Promise<FailedClassification[]> {
+  return request<FailedClassification[]>('/pipeline/classify/failed')
+}
+
+export async function retryFailedClassifications(): Promise<{ retried: number }> {
+  return request('/pipeline/classify/retry', { method: 'POST', body: '{}' })
+}
