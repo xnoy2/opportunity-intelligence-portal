@@ -62,6 +62,7 @@ export interface LeadFilters {
   category?: string
   classified?: 'true' | 'false'
   unactioned?: boolean
+  orderBy?: 'score' | 'recent'
   limit?: number
   offset?: number
 }

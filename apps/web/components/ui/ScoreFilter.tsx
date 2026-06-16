@@ -4,8 +4,8 @@
 // Ranges (not just minimums) so each tier is a distinct band.
 export const SCORE_TIERS = {
   all:  { label: 'All scores',       min: 0,  max: 100 },
-  hot:  { label: '🔥 Hot · 80–100',  min: 80, max: 100 },
-  warm: { label: 'Warm · 50–79',     min: 50, max: 79  },
+  hot:  { label: '🔥 Hot · 85–100',  min: 85, max: 100 },
+  warm: { label: 'Warm · 50–84',     min: 50, max: 84  },
   cold: { label: 'Cold · below 50',  min: 0,  max: 49  },
 } as const
 

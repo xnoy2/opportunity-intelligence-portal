@@ -65,7 +65,10 @@ export default function PipelinePage() {
   const { ref: boardRef, dragProps } = useDragScroll()
 
   useEffect(() => {
-    getLeads({ limit: 200 })
+    // Order by recency (not score) and load a wider window so leads you've
+    // actively worked stay on the board instead of being pushed off by
+    // higher-scoring NEW leads.
+    getLeads({ limit: 500, orderBy: 'recent' })
       .then(r => setLeads(r.leads))
       .catch(console.error)
       .finally(() => setLoading(false))
