@@ -29,9 +29,16 @@ export default function LeafletMap({ leads, onSelect }: Props) {
     if (!containerRef.current) return
 
     let resizeObs: ResizeObserver | undefined
+    let rafId = 0
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
+    // Set on cleanup so any deferred callback (raf/timeout/observer/zoom-end)
+    // that fires after the map is destroyed bails out instead of touching a
+    // removed map (which throws "_leaflet_pos of undefined").
+    let cancelled = false
 
     const init = async () => {
       const L = (await import('leaflet')).default
+      if (cancelled || !containerRef.current) return
 
       // Fix Leaflet default icon paths broken by webpack
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -51,6 +58,13 @@ export default function LeafletMap({ leads, onSelect }: Props) {
         center: [54.7, -6.7],   // centred on NI
         zoom:   8,
         zoomControl: true,
+        // Disable zoom/fade animations entirely. With React StrictMode double
+        // mounts (and theme re-inits), an in-flight zoom transition can fire
+        // _onZoomTransitionEnd AFTER the map is destroyed, throwing
+        // "_leaflet_pos of undefined". No animation = that listener never runs.
+        zoomAnimation:       false,
+        fadeAnimation:       false,
+        markerZoomAnimation: false,
       })
 
       // CartoDB tiles — match the active theme
@@ -88,10 +102,18 @@ export default function LeafletMap({ leads, onSelect }: Props) {
         return marker
       })
 
+      // Guard: the map may have been removed between scheduling and firing.
+      const alive = () => !cancelled && mapRef.current === map && !!map.getContainer()
+
       const refit = () => {
-        if (markersRef.current.length > 0) {
+        if (!alive() || markersRef.current.length === 0) return
+        try {
           const group = L.featureGroup(markersRef.current)
-          map.fitBounds(group.getBounds().pad(0.1))
+          // animate:false avoids a zoom transition that, if it ends after the
+          // map is destroyed, throws on the missing pane position.
+          map.fitBounds(group.getBounds().pad(0.1), { animate: false })
+        } catch (err) {
+          console.warn('[map] fitBounds skipped:', err)
         }
       }
       refit()
@@ -99,12 +121,12 @@ export default function LeafletMap({ leads, onSelect }: Props) {
       // The container is often 0×0 at init inside a flex/dynamic layout, which
       // leaves the SVG marker overlay invisible. Recompute size once mounted,
       // and whenever the container resizes.
-      const fixSize = () => { map.invalidateSize(); refit() }
-      requestAnimationFrame(fixSize)
-      setTimeout(fixSize, 200)
+      const fixSize = () => { if (!alive()) return; map.invalidateSize(); refit() }
+      rafId = requestAnimationFrame(fixSize)
+      timeoutId = setTimeout(fixSize, 200)
 
       if (containerRef.current) {
-        resizeObs = new ResizeObserver(() => map.invalidateSize())
+        resizeObs = new ResizeObserver(() => { if (alive()) map.invalidateSize() })
         resizeObs.observe(containerRef.current)
       }
     }
@@ -112,6 +134,9 @@ export default function LeafletMap({ leads, onSelect }: Props) {
     init().catch(console.error)
 
     return () => {
+      cancelled = true
+      cancelAnimationFrame(rafId)
+      if (timeoutId) clearTimeout(timeoutId)
       resizeObs?.disconnect()
       markersRef.current = []
       mapRef.current?.remove()
