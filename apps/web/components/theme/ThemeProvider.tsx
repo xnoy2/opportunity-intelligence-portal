@@ -21,13 +21,13 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('light')
+  const [theme, setThemeState] = useState<Theme>('dark')
 
   // Sync with whatever the pre-hydration script already applied.
+  // Dark is the default; an explicit saved choice still wins.
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as Theme | null
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    setThemeState(stored ?? (prefersDark ? 'dark' : 'light'))
+    setThemeState(stored ?? 'dark')
   }, [])
 
   const setTheme = useCallback((t: Theme) => {
@@ -58,4 +58,4 @@ export function useTheme() {
 }
 
 /** Inline script injected before hydration to prevent a flash of the wrong theme. */
-export const themeInitScript = `(function(){try{var t=localStorage.getItem('${STORAGE_KEY}');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}var r=document.documentElement;r.classList.toggle('dark',t==='dark');r.style.colorScheme=t;}catch(e){}})();`
+export const themeInitScript = `(function(){try{var t=localStorage.getItem('${STORAGE_KEY}')||'dark';var r=document.documentElement;r.classList.toggle('dark',t==='dark');r.style.colorScheme=t;}catch(e){document.documentElement.classList.add('dark');}})();`
