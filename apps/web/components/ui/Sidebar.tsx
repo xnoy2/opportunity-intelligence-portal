@@ -23,7 +23,7 @@ export default function Sidebar() {
           B
         </span>
         <div>
-          <p className="text-base font-medium leading-tight text-foreground">BCF Portal</p>
+          <p className="text-base font-medium leading-tight text-foreground">Leads Portal</p>
           <p className="text-xs leading-tight text-muted-foreground">Opportunity Intelligence</p>
         </div>
       </div>

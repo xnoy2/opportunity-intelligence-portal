@@ -59,8 +59,38 @@ const config: Config = {
           to: { opacity: '1', transform: 'translateY(0)' },
         },
         shimmer: { '100%': { transform: 'translateX(100%)' } },
+        // Login experience
+        rise: {
+          from: { opacity: '0', transform: 'translateY(18px)' },
+          to:   { opacity: '1', transform: 'translateY(0)' },
+        },
+        'logo-in': {
+          '0%':   { opacity: '0', transform: 'scale(0.6) rotate(-8deg)' },
+          '60%':  { opacity: '1', transform: 'scale(1.08) rotate(0deg)' },
+          '100%': { opacity: '1', transform: 'scale(1) rotate(0deg)' },
+        },
+        // Self-dismissing splash: holds, then fades to hidden (forwards fill).
+        'splash-cover': {
+          '0%, 55%': { opacity: '1', visibility: 'visible' },
+          '100%':    { opacity: '0', visibility: 'hidden' },
+        },
+        'ring-pulse': {
+          '0%':        { transform: 'scale(0.85)', opacity: '0.55' },
+          '70%, 100%': { transform: 'scale(1.9)',  opacity: '0' },
+        },
+        'blob-float': {
+          '0%, 100%': { transform: 'translate(-50%, 0) scale(1)' },
+          '50%':      { transform: 'translate(-50%, 24px) scale(1.08)' },
+        },
       },
-      animation: { 'fade-in': 'fade-in 0.3s cubic-bezier(0.2, 0, 0, 1)' },
+      animation: {
+        'fade-in':    'fade-in 0.3s cubic-bezier(0.2, 0, 0, 1)',
+        rise:         'rise 0.6s cubic-bezier(0.2, 0, 0, 1) both',
+        'logo-in':    'logo-in 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both',
+        'splash-cover': 'splash-cover 1.7s cubic-bezier(0.4, 0, 0.2, 1) forwards',
+        'ring-pulse': 'ring-pulse 1.8s ease-out infinite',
+        'blob-float': 'blob-float 9s ease-in-out infinite',
+      },
     },
   },
   plugins: [],

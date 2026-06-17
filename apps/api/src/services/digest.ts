@@ -95,13 +95,13 @@ function generateHtml(leads: Awaited<ReturnType<typeof getTopLeads>>, stats: { t
     <!-- CTA -->
     <div style="text-align:center;margin-bottom:24px;">
       <a href="${portalUrl}/dashboard" style="background:#C9A84C;color:#0F1623;font-weight:700;padding:12px 32px;border-radius:8px;text-decoration:none;font-size:14px;display:inline-block;">
-        Open BCF Portal →
+        Open Leads Portal →
       </a>
     </div>
 
     <!-- Footer -->
     <div style="border-top:1px solid #1E2D42;padding-top:16px;color:#4A5568;font-size:11px;text-align:center;">
-      BCF Group · Opportunity Intelligence Portal · Automated weekly digest<br>
+      Leads Portal · Opportunity Intelligence · Automated weekly digest<br>
       BGR · BWDS NI · Ballycastle Climbing Frames
     </div>
   </div>
@@ -155,9 +155,9 @@ export async function sendWeeklyDigest(): Promise<void> {
     // onboarding@resend.dev works without domain verification.
     // To send from digest@bcfportal.co.uk, verify that domain in Resend
     // and set DIGEST_FROM env var.
-    from:    process.env.DIGEST_FROM || 'BCF Portal <onboarding@resend.dev>',
+    from:    process.env.DIGEST_FROM || 'Leads Portal <onboarding@resend.dev>',
     to,
-    subject: `BCF Weekly Intelligence Report — ${leads.length} new leads, ${fmtValue(stats.pipeline)} pipeline`,
+    subject: `Weekly Intelligence Report — ${leads.length} new leads, ${fmtValue(stats.pipeline)} pipeline`,
     html,
   })
 

@@ -11,7 +11,7 @@ const roboto = Roboto({
 })
 
 export const metadata: Metadata = {
-  title: 'BCF Opportunity Intelligence Portal',
+  title: 'Leads Portal — Opportunity Intelligence',
   description: 'Opportunity intelligence for BGR, BWDS NI, and BCF',
 }
 
