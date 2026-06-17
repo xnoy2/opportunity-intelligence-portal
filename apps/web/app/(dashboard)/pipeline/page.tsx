@@ -64,15 +64,19 @@ export default function PipelinePage() {
   const [query, setQuery] = useState('')
   const [scoreTier, setScoreTier] = useState<ScoreTier>('all')
   const [company, setCompany] = useState('')
+  const [shown, setShown] = useState<Record<string, number>>({})
   const [draggedId, setDraggedId] = useState<string | null>(null)
+
+  const PAGE = 30
+  const shownFor = (key: string) => shown[key] ?? PAGE
+  const loadMore = (key: string) => setShown(s => ({ ...s, [key]: shownFor(key) + PAGE }))
   const [overStage, setOverStage] = useState<LeadStatus | null>(null)
   const { ref: boardRef, dragProps } = useDragScroll()
 
   useEffect(() => {
-    // Order by recency (not score) and load a wider window so leads you've
-    // actively worked stay on the board instead of being pushed off by
-    // higher-scoring NEW leads.
-    getLeads({ limit: 500, orderBy: 'recent' })
+    // Load the full set (ordered by recency) so column counts are accurate and
+    // nothing is hidden; each column renders in chunks via "Load more" to stay fast.
+    getLeads({ limit: 5000, orderBy: 'recent' })
       .then(r => setLeads(r.leads))
       .catch(console.error)
       .finally(() => setLoading(false))
@@ -140,7 +144,7 @@ export default function PipelinePage() {
 
           <CompanyFilter value={company} onChange={setCompany} />
           <ScoreFilter value={scoreTier} onChange={setScoreTier} />
-          <span className="ml-auto text-xs text-muted-foreground">{visible.length} shown</span>
+          <span className="ml-auto text-xs text-muted-foreground">{visible.length.toLocaleString('en-GB')} leads</span>
         </div>
 
         {loading ? (
@@ -191,14 +195,24 @@ export default function PipelinePage() {
                         {isOver ? 'Drop here' : 'Empty'}
                       </p>
                     ) : (
-                      cards.map(lead => (
-                        <LeadCard
-                          key={lead.id}
-                          lead={lead}
-                          onDragStart={setDraggedId}
-                          onDragEnd={() => { setDraggedId(null); setOverStage(null) }}
-                        />
-                      ))
+                      <>
+                        {cards.slice(0, shownFor(stage.key)).map(lead => (
+                          <LeadCard
+                            key={lead.id}
+                            lead={lead}
+                            onDragStart={setDraggedId}
+                            onDragEnd={() => { setDraggedId(null); setOverStage(null) }}
+                          />
+                        ))}
+                        {cards.length > shownFor(stage.key) && (
+                          <button
+                            onClick={() => loadMore(stage.key)}
+                            className="state-layer w-full rounded-xl border border-outline py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                          >
+                            Load more ({(cards.length - shownFor(stage.key)).toLocaleString('en-GB')} more)
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
