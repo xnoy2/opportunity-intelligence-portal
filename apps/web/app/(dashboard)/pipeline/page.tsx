@@ -117,10 +117,10 @@ export default function PipelinePage() {
     visible.filter(l => l.status === key).reduce((s, l) => s + (l.estimatedValue ?? 0), 0)
 
   return (
-    <div>
+    <div className="flex h-full flex-col">
       <Topbar title="Pipeline" subtitle="Drag leads between stages — synced to GoHighLevel" />
 
-      <div className="p-6">
+      <div className="flex min-h-0 flex-1 flex-col p-6">
         {/* Filters — apply across all stages */}
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <div className="relative max-w-xs flex-1">
@@ -148,9 +148,9 @@ export default function PipelinePage() {
         </div>
 
         {loading ? (
-          <div className="flex gap-4 overflow-x-auto pb-4">
+          <div className="flex min-h-0 flex-1 gap-4 overflow-x-auto pb-4">
             {STAGES.map(s => (
-              <div key={s.key} className="w-64 flex-shrink-0 space-y-2 rounded-3xl bg-surface-container p-3">
+              <div key={s.key} className="h-full w-64 flex-shrink-0 space-y-2 rounded-3xl bg-surface-container p-3">
                 <div className="skeleton h-4 w-24" />
                 {Array.from({ length: 2 }).map((_, i) => <div key={i} className="skeleton h-24 rounded-2xl" />)}
               </div>
@@ -160,7 +160,7 @@ export default function PipelinePage() {
           <div
             ref={boardRef}
             {...dragProps}
-            className="flex min-h-[60vh] cursor-grab gap-4 overflow-x-auto pb-4"
+            className="flex min-h-0 flex-1 cursor-grab gap-4 overflow-x-auto pb-4"
           >
             {STAGES.map(stage => {
               const cards = byStage(stage.key)
@@ -172,12 +172,12 @@ export default function PipelinePage() {
                   onDragEnter={e => { e.preventDefault(); if (draggedId) setOverStage(stage.key) }}
                   onDragOver={e => { if (draggedId) e.preventDefault() }}
                   onDrop={() => handleDrop(stage.key)}
-                  className={`flex w-64 flex-shrink-0 flex-col rounded-3xl transition-colors ${
+                  className={`flex h-full w-64 flex-shrink-0 flex-col rounded-3xl transition-colors ${
                     isOver ? 'bg-primary-container/40 ring-2 ring-primary' : 'bg-surface-container'
                   }`}
                 >
                   {/* Column header */}
-                  <div className="px-4 py-3.5">
+                  <div className="flex-none px-4 py-3.5">
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-2 text-sm font-medium text-foreground">
                         <span className={`h-2 w-2 rounded-full ${stage.accent}`} />
@@ -188,8 +188,8 @@ export default function PipelinePage() {
                     {val > 0 && <p className="mt-1 pl-4 text-xs font-medium text-primary">{fmtCurrency(val)}</p>}
                   </div>
 
-                  {/* Cards */}
-                  <div className="flex-1 space-y-2.5 overflow-y-auto px-2.5 pb-2.5">
+                  {/* Cards — scrolls independently within this column */}
+                  <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto px-2.5 pb-2.5">
                     {cards.length === 0 ? (
                       <p className="py-8 text-center text-xs text-muted-foreground">
                         {isOver ? 'Drop here' : 'Empty'}
