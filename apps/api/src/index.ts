@@ -26,7 +26,8 @@ async function main() {
     process.env.WEB_URL || 'http://localhost:3000',
     'http://localhost:3000',
     'https://web-production-90ce7.up.railway.app',          // Railway default web URL
-    'https://portal.ballycastleclimbingframes.co.uk',       // custom domain (Cloudflare)
+    'https://leads.ballycastleclimbingframes.co.uk',        // custom domain (Cloudflare)
+    'https://portal.ballycastleclimbingframes.co.uk',       // legacy/alt custom domain
     // Any extra origins, comma-separated, e.g. "https://a.com,https://b.com"
     ...(process.env.EXTRA_ORIGINS?.split(',').map(o => o.trim()).filter(Boolean) ?? []),
   ].filter(Boolean)
