@@ -9,6 +9,8 @@ import CompanyBadge from '@/components/leads/CompanyBadge'
 import { getLeads, updateLeadStatus } from '@/lib/api'
 import { fmtCurrency } from '@/lib/format'
 import { useDragScroll } from '@/lib/useDragScroll'
+import ScoreFilter, { SCORE_TIERS, type ScoreTier } from '@/components/ui/ScoreFilter'
+import CompanyFilter from '@/components/ui/CompanyFilter'
 import type { Lead, LeadStatus } from '@/types'
 
 const STAGES: { key: LeadStatus; label: string; accent: string }[] = [
@@ -60,6 +62,8 @@ export default function PipelinePage() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
+  const [scoreTier, setScoreTier] = useState<ScoreTier>('all')
+  const [company, setCompany] = useState('')
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [overStage, setOverStage] = useState<LeadStatus | null>(null)
   const { ref: boardRef, dragProps } = useDragScroll()
@@ -96,12 +100,13 @@ export default function PipelinePage() {
   }
 
   const q = query.trim().toLowerCase()
-  const visible = q
-    ? leads.filter(l =>
-        [l.planningRef, l.location, l.projectType, l.assignedCompany]
-          .some(v => v?.toLowerCase().includes(q)),
-      )
-    : leads
+  const { min, max } = SCORE_TIERS[scoreTier]
+  const visible = leads.filter(l => {
+    if (company && l.assignedCompany !== company) return false
+    if (l.leadScore < min || l.leadScore > max) return false
+    if (q && ![l.planningRef, l.location, l.projectType, l.assignedCompany].some(v => v?.toLowerCase().includes(q))) return false
+    return true
+  })
 
   const byStage = (key: LeadStatus) => visible.filter(l => l.status === key)
   const stageValue = (key: LeadStatus) =>
@@ -112,8 +117,9 @@ export default function PipelinePage() {
       <Topbar title="Pipeline" subtitle="Drag leads between stages — synced to GoHighLevel" />
 
       <div className="p-6">
-        {/* Search across all stages */}
-        <div className="relative mb-4 max-w-md">
+        {/* Filters — apply across all stages */}
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="relative max-w-xs flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             value={query}
@@ -130,6 +136,11 @@ export default function PipelinePage() {
               <X className="h-3.5 w-3.5" />
             </button>
           )}
+          </div>
+
+          <CompanyFilter value={company} onChange={setCompany} />
+          <ScoreFilter value={scoreTier} onChange={setScoreTier} />
+          <span className="ml-auto text-xs text-muted-foreground">{visible.length} shown</span>
         </div>
 
         {loading ? (
